@@ -12,7 +12,6 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
 
 function Section({ title, desc, icon: Icon, children }) {
   return (
@@ -63,15 +62,18 @@ function WebhookCard({
     setTesting(true);
     setLastResult(null);
     try {
-      const res = await base44.functions.invoke("testWebhook", {
-        kind,
-        url,
-        auth_enabled: authEnabled,
-        auth_user: authUser,
-        auth_pass: authPass,
-        source_url: typeof window !== "undefined" ? window.location.href : "",
+      const response = await fetch("/api/test-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind,
+          url,
+          auth_enabled: authEnabled,
+          auth_user: authUser,
+          auth_pass: authPass,
+        }),
       });
-      const data = res?.data || {};
+      const data = await response.json().catch(() => ({}));
       setLastResult(data);
       if (data.ok) {
         toast.success(`Webhook respondeu com status ${data.status}`);

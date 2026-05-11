@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { fetchVehiclesAdmin, VEHICLES_ADMIN_QUERY_KEY } from "@/lib/vehicleQueries";
 import { Plus, Car, Search, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,8 @@ export default function AdminVehicles() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: () => base44.entities.Vehicle.list("-created_date", 500),
+    queryKey: VEHICLES_ADMIN_QUERY_KEY,
+    queryFn: fetchVehiclesAdmin,
   });
 
   const filtered = useMemo(() => {

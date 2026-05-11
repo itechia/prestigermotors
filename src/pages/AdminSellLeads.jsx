@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -42,7 +42,15 @@ export default function AdminSellLeads() {
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["sellLeads"],
-    queryFn: () => base44.entities.SellLead.list("-created_date", 200),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sell_leads")
+        .select("*")
+        .order("created_date", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const filtered = useMemo(() => {
@@ -64,16 +72,28 @@ export default function AdminSellLeads() {
   }, [leads]);
 
   const updateMut = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SellLead.update(id, data),
-    onSuccess: (data) => {
+    mutationFn: async ({ id, data }) => {
+      const { data: result, error } = await supabase
+        .from("sell_leads")
+        .update({ ...data, updated_date: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["sellLeads"] });
-      if (selected && data) setSelected({ ...selected, ...data });
+      if (selected && result) setSelected({ ...selected, ...result });
       toast.success("Proposta atualizada");
     },
   });
 
   const removeMut = useMutation({
-    mutationFn: (id) => base44.entities.SellLead.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from("sell_leads").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sellLeads"] });
       setSelected(null);

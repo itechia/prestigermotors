@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Loader2, X, ImageIcon } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ export default function LogoUploadField({
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadFile({ file });
       onChange(file_url);
     } catch {
       toast.error("Erro no upload");

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import { Save, Store, Sparkles, ShieldCheck, MessageCircleHeart, Tag, PanelBottom, ListTree, Webhook, MousePointerClick } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,12 +45,21 @@ export default function AdminSettings() {
 
   const save = useMutation({
     mutationFn: async () => {
-      // Strip base44 system fields that can't be sent back on update
-      const { id, created_date, updated_date, created_by, ...payload } = form;
+      const now = new Date().toISOString();
+      // eslint-disable-next-line no-unused-vars
+      const { id: _id, created_date: _cd, updated_date: _ud, created_by: _cb, ...payload } = form;
       if (record?.id) {
-        return await base44.entities.StoreSettings.update(record.id, payload);
+        const { error } = await supabase
+          .from("store_settings")
+          .update({ ...payload, updated_date: now })
+          .eq("id", record.id);
+        if (error) throw error;
+        return;
       }
-      return await base44.entities.StoreSettings.create(payload);
+      const { error } = await supabase
+        .from("store_settings")
+        .insert({ id: crypto.randomUUID(), ...payload, created_date: now, updated_date: now });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SETTINGS_SINGLETON_QUERY_KEY });

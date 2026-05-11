@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
+import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +53,7 @@ export default function SellLeadForm() {
     setUploading(true);
     try {
       const uploads = await Promise.all(
-        files.map((file) => base44.integrations.Core.UploadFile({ file }))
+        files.map((file) => uploadFile({ file }))
       );
       const urls = uploads.map((u) => u.file_url);
       update("images", [...(form.images || []), ...urls]);
@@ -94,14 +95,14 @@ export default function SellLeadForm() {
     }
     setSubmitting(true);
     try {
-      await base44.entities.SellLead.create({
+      const now = new Date().toISOString();
+      const leadId = crypto.randomUUID();
+      const { error } = await supabase.from("sell_leads").insert({
+        id: leadId,
         owner_name: form.owner_name,
         owner_email: form.owner_email,
         owner_phone: form.owner_phone,
         owner_city: form.owner_city,
-        // We store the vehicle_type prefix on the brand or notes when set, so
-        // the SellLead entity (which already has brand/model fields) keeps
-        // working without schema changes.
         brand: form.brand,
         model: form.model,
         version: form.version,
@@ -118,7 +119,15 @@ export default function SellLeadForm() {
         asking_price: form.asking_price,
         images: form.images,
         status: "novo",
+        created_date: now,
+        updated_date: now,
       });
+      if (error) throw error;
+      fetch("/api/send-sell-lead-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId }),
+      }).catch(() => {});
       setDone(true);
     } catch {
       toast.error("Tivemos um problema inesperado. Tente novamente mais tarde.");

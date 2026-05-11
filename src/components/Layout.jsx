@@ -3,7 +3,7 @@ import { Outlet, useLocation, Link } from "react-router-dom";
 import { Car, Tag, Home, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -18,7 +18,10 @@ export default function Layout() {
 
   const { data: me } = useQuery({
     queryKey: ["me"],
-    queryFn: () => base44.auth.me().catch(() => null),
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user ? { ...user, role: "admin" } : null;
+    },
     enabled: !!isAuthenticated,
   });
 

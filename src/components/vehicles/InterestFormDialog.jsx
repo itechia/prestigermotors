@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { formatCurrency, formatYear } from "@/lib/formatters";
 import PhoneInput from "@/components/PhoneInput";
@@ -83,14 +82,17 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle }) {
 
     setSubmitting(true);
     try {
-      const res = await base44.functions.invoke("sendInterestWebhook", {
-        vehicle_id: vehicle.id,
-        form_data: cleaned,
-        source_url: typeof window !== "undefined" ? window.location.href : "",
+      const response = await fetch("/api/send-interest-webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicle_id: vehicle.id,
+          form_data: cleaned,
+          source_url: typeof window !== "undefined" ? window.location.href : "",
+        }),
       });
-      // The webhook function now returns ok:false when destination fails.
-      // We deliberately hide technical details from the visitor.
-      if (res?.data?.ok === false || res?.data?.error) {
+      const data = await response.json().catch(() => ({}));
+      if (data?.ok === false || data?.error) {
         toast.error("Tivemos um problema inesperado. Tente novamente mais tarde.");
       } else {
         setDone(true);

@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
+import { fetchVehiclesAdmin, VEHICLES_ADMIN_QUERY_KEY } from "@/lib/vehicleQueries";
 import { Plus, Car, Eye, CheckCircle2, DollarSign, Flame, ArrowRight, Settings, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/formatters";
@@ -9,13 +10,21 @@ import AdminShell from "../components/admin/AdminShell";
 
 export default function AdminDashboard() {
   const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: () => base44.entities.Vehicle.list("-created_date", 200),
+    queryKey: VEHICLES_ADMIN_QUERY_KEY,
+    queryFn: fetchVehiclesAdmin,
   });
 
   const { data: leads = [] } = useQuery({
     queryKey: ["sellLeads"],
-    queryFn: () => base44.entities.SellLead.list("-created_date", 200),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sell_leads")
+        .select("id,status,created_date")
+        .order("created_date", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const newLeads = leads.filter((l) => (l.status || "novo") === "novo").length;
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import { ArrowLeft, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,8 +48,13 @@ function Editor() {
   const { data: vehicle } = useQuery({
     queryKey: ["vehicle", id],
     queryFn: async () => {
-      const list = await base44.entities.Vehicle.filter({ id });
-      return list[0];
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data ?? null;
     },
     enabled: !isNew,
   });
@@ -74,11 +79,27 @@ function Editor() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (isNew) return await base44.entities.Vehicle.create(form);
-      return await base44.entities.Vehicle.update(id, form);
+      const now = new Date().toISOString();
+      if (isNew) {
+        const newId = crypto.randomUUID();
+        const { error } = await supabase
+          .from("vehicles")
+          .insert({ id: newId, ...form, created_date: now, updated_date: now });
+        if (error) throw error;
+        return { id: newId, ...form };
+      }
+      const { data, error } = await supabase
+        .from("vehicles")
+        .update({ ...form, updated_date: now })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicles", "admin"] });
       toast.success(isNew ? "Veículo cadastrado!" : "Veículo atualizado!");
       navigate("/admin/veiculos");
     },
@@ -86,9 +107,13 @@ function Editor() {
   });
 
   const remove = useMutation({
-    mutationFn: () => base44.entities.Vehicle.delete(id),
+    mutationFn: async () => {
+      const { error } = await supabase.from("vehicles").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicles", "admin"] });
       toast.success("Veículo removido");
       navigate("/admin/veiculos");
     },

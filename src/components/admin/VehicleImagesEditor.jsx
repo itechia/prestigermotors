@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Upload, Loader2, X, Star, GripVertical, ImageUp } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ export default function VehicleImagesEditor({ images = [], onChange }) {
     setUploading(true);
     try {
       const uploads = await Promise.all(
-        files.map((file) => base44.integrations.Core.UploadFile({ file }))
+        files.map((file) => uploadFile({ file }))
       );
       const urls = uploads.map((u) => u.file_url);
       onChange([...(images || []), ...urls]);

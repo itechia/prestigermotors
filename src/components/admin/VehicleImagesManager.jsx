@@ -6,7 +6,7 @@ import {
 } from "@hello-pangea/dnd";
 import { Upload, Loader2, X, Star, GripVertical, ArrowUpToLine, Info } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/uploadFile";
 
 export default function VehicleImagesManager({ images = [], onChange, hasEmbed = false }) {
   const [uploading, setUploading] = useState(false);
@@ -17,7 +17,7 @@ export default function VehicleImagesManager({ images = [], onChange, hasEmbed =
     setUploading(true);
     try {
       const uploads = await Promise.all(
-        files.map((file) => base44.integrations.Core.UploadFile({ file }))
+        files.map((file) => uploadFile({ file }))
       );
       const urls = uploads.map((u) => u.file_url);
       onChange([...(images || []), ...urls]);

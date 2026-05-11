@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -25,7 +25,7 @@ function LogoUploader({ value, onChange, FallbackLogo }) {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadFile({ file });
       onChange(file_url);
     } catch {
       toast.error("Erro no upload");

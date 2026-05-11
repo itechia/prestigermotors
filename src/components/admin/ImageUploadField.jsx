@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 
 export default function ImageUploadField({ label, value, onChange, hint, aspectClass = "aspect-video" }) {
@@ -14,7 +14,7 @@ export default function ImageUploadField({ label, value, onChange, hint, aspectC
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadFile({ file });
       onChange(file_url);
     } catch {
       toast.error("Erro no upload");

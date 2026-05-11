@@ -15,6 +15,7 @@ const CATALOG_COLS = [
 ].join(",");
 
 export const VEHICLES_QUERY_KEY = ["vehicles"];
+export const VEHICLES_ADMIN_QUERY_KEY = ["vehicles", "admin"];
 export const FIVE_MIN = 5 * 60 * 1000;
 
 export async function fetchVehiclesCatalog() {
@@ -23,6 +24,17 @@ export async function fetchVehiclesCatalog() {
     .select(CATALOG_COLS)
     .order("created_date", { ascending: false })
     .limit(200);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Admin: mesmas colunas do catálogo mas sem limite de 200 e inclui ocultos
+export async function fetchVehiclesAdmin() {
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select(CATALOG_COLS)
+    .order("created_date", { ascending: false })
+    .limit(500);
   if (error) throw error;
   return data ?? [];
 }
