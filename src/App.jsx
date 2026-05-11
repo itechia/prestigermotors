@@ -9,6 +9,37 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import Layout from './components/Layout';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: '2rem', fontFamily: 'monospace', maxWidth: '800px', margin: '2rem auto' }}>
+          <h2 style={{ color: '#c00', marginBottom: '1rem' }}>Erro na aplicação</h2>
+          <pre style={{ background: '#fee', padding: '1rem', borderRadius: '8px', whiteSpace: 'pre-wrap', fontSize: '13px' }}>
+            {this.state.error?.message}
+            {'\n\n'}
+            {this.state.error?.stack}
+          </pre>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
+          >
+            Recarregar página
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const Catalog = lazy(() => import('./pages/Catalog'));
 const VehicleDetail = lazy(() => import('./pages/VehicleDetail'));
 const SellMyVehicle = lazy(() => import('./pages/SellMyVehicle'));
@@ -64,17 +95,19 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
-          <SonnerToaster position="top-center" richColors />
-        </QueryClientProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <QueryClientProvider client={queryClientInstance}>
+            <Router>
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+            <SonnerToaster position="top-center" richColors />
+          </QueryClientProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
