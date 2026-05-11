@@ -9,7 +9,7 @@ import {
   ArrowLeft, Share2, MessageCircle,
   Gauge, Fuel, Calendar, Settings, Palette, DoorOpen, Check,
   Clock, Flame, TrendingDown, ChevronLeft, ChevronRight, RotateCw,
-  X, ZoomIn, ZoomOut,
+  X, ZoomIn, ZoomOut, Maximize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,8 @@ export default function VehicleDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [thumbOffset, setThumbOffset] = useState(0);
   const [interestOpen, setInterestOpen] = useState(false);
-  const [lightboxIdx, setLightboxIdx] = useState(null); // null = fechado
+  // fsMode: null = fechado | { type:'image', idx:number } | { type:'embed' }
+  const [fsMode, setFsMode] = useState(null);
 
   // Always start at the top when opening a vehicle
   useEffect(() => {
@@ -146,20 +147,30 @@ export default function VehicleDetail() {
             className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
           >
             {showingEmbed ? (
-              <iframe
-                key="embed"
-                srcDoc={vehicle.embed_html}
-                title={`${vehicle.brand} ${vehicle.model} 360°`}
-                sandbox="allow-scripts allow-same-origin"
-                scrolling="no"
-                className="w-full h-full border-0 block"
-              />
+              <>
+                <iframe
+                  key="embed"
+                  srcDoc={vehicle.embed_html}
+                  title={`${vehicle.brand} ${vehicle.model} 360°`}
+                  sandbox="allow-scripts allow-same-origin"
+                  scrolling="no"
+                  className="w-full h-full border-0 block"
+                />
+                {/* Botão para abrir o embed em tela cheia */}
+                <button
+                  onClick={() => setFsMode({ type: "embed" })}
+                  className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                  title="Tela cheia"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </>
             ) : (
               <img
                 src={images[imageIndex]}
                 alt={vehicle.model}
                 className="w-full h-full object-cover cursor-zoom-in"
-                onClick={() => setLightboxIdx(imageIndex)}
+                onClick={() => setFsMode({ type: "image", idx: imageIndex })}
               />
             )}
 
@@ -430,11 +441,13 @@ export default function VehicleDetail() {
         vehicle={vehicle}
       />
 
-      {lightboxIdx !== null && (
-        <ImageLightbox
+      {fsMode && (
+        <FullscreenViewer
+          type={fsMode.type}
           images={images}
-          initialIndex={lightboxIdx}
-          onClose={() => setLightboxIdx(null)}
+          initialIdx={fsMode.idx ?? 0}
+          embedHtml={vehicle.embed_html}
+          onClose={() => setFsMode(null)}
         />
       )}
     </div>
@@ -461,8 +474,11 @@ function DetailRow({ label, value }) {
   );
 }
 
-function ImageLightbox({ images, initialIndex, onClose }) {
-  const [idx, setIdx] = useState(initialIndex);
+// ─── Visualizador em tela cheia (imagens + embed 360°) ─────────────────────
+// Usa inline styles para garantir cobertura total — evita conflitos de z-index
+// com backdrop-filter do header/nav que criam stacking contexts próprios.
+function FullscreenViewer({ type, images, initialIdx, embedHtml, onClose }) {
+  const [idx, setIdx] = useState(initialIdx);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -559,81 +575,121 @@ function ImageLightbox({ images, initialIndex, onClose }) {
   const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); };
   const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); };
 
+  // Inline styles garantem cobertura total — Tailwind classes podem falhar
+  // quando backdrop-filter no header/nav cria stacking contexts que confundem z-index
+  const overlay = {
+    position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 2147483647, // máximo possível
+    backgroundColor: "#000",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    userSelect: "none",
+  };
+  const btnBase = {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    borderRadius: "50%", border: "none", cursor: "pointer",
+    backgroundColor: "rgba(255,255,255,0.15)", color: "#fff",
+    transition: "background-color 0.15s",
+  };
+
   return createPortal(
-    <div
-      className="fixed inset-0 z-[999] bg-black/96 flex items-center justify-center select-none"
-      onClick={scale <= 1 ? onClose : undefined}
-    >
-      {/* Fechar */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
-      >
-        <X className="w-5 h-5" />
-      </button>
+    <div style={overlay} onClick={type === "image" && scale <= 1 ? onClose : undefined}>
 
-      {/* Contador */}
-      {images.length > 1 && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 text-white/60 text-sm font-medium tabular-nums">
-          {idx + 1} / {images.length}
-        </div>
-      )}
-
-      {/* Controles de zoom */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-full px-5 py-2.5">
-        <button onClick={() => zoom(1 / 1.3)} className="text-white/70 hover:text-white transition-colors">
-          <ZoomOut className="w-5 h-5" />
-        </button>
-        <span className="text-white text-sm font-semibold w-12 text-center tabular-nums">
-          {Math.round(scale * 100)}%
-        </span>
-        <button onClick={() => zoom(1.3)} className="text-white/70 hover:text-white transition-colors">
-          <ZoomIn className="w-5 h-5" />
+      {/* ── Barra superior: fechar (direita) + contador (centro) ── */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 2,
+                    padding: "12px 16px", display: "flex", alignItems: "center",
+                    justifyContent: "space-between",
+                    background: "linear-gradient(to bottom, rgba(0,0,0,0.65), transparent)" }}>
+        {/* Contador de imagens */}
+        {type === "image" && images.length > 1 ? (
+          <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 600 }}>
+            {idx + 1} / {images.length}
+          </span>
+        ) : <span />}
+        {/* Botão X — sempre visível */}
+        <button
+          onClick={onClose}
+          style={{ ...btnBase, width: 44, height: 44, fontSize: 20,
+                   backgroundColor: "rgba(255,255,255,0.2)", border: "1.5px solid rgba(255,255,255,0.25)" }}
+        >
+          <X className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Setas de navegação */}
-      {images.length > 1 && (
+      {type === "embed" ? (
+        /* ── Modo embed 360° ─────────────────────────────────── */
+        <iframe
+          srcDoc={embedHtml}
+          sandbox="allow-scripts allow-same-origin"
+          scrolling="no"
+          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+        />
+      ) : (
+        /* ── Modo imagem com zoom ─────────────────────────────── */
         <>
-          <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
-            <ChevronRight className="w-6 h-6" />
-          </button>
+          {/* Área da imagem */}
+          <div
+            style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
+                     justifyContent: "center", overflow: "hidden", touchAction: "none" }}
+            onWheel={onWheel}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            <img
+              src={images[idx]}
+              alt={`Imagem ${idx + 1}`}
+              draggable={false}
+              onDoubleClick={onDblClick}
+              onClick={e => e.stopPropagation()}
+              style={{
+                maxHeight: "85vh", maxWidth: "92vw",
+                objectFit: "contain", userSelect: "none",
+                cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                transition: isDragging ? "none" : "transform 0.12s ease",
+              }}
+            />
+          </div>
+
+          {/* Setas laterais */}
+          {images.length > 1 && (
+            <>
+              <button onClick={prev}
+                style={{ ...btnBase, position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                         width: 44, height: 44, zIndex: 2 }}>
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button onClick={next}
+                style={{ ...btnBase, position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                         width: 44, height: 44, zIndex: 2 }}>
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          {/* Controles de zoom — acima do nav mobile (80px do fundo) */}
+          <div style={{ position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 2,
+                        display: "flex", alignItems: "center", gap: 12,
+                        backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
+                        borderRadius: 999, padding: "10px 20px" }}>
+            <button onClick={() => zoom(1 / 1.3)}
+              style={{ ...btnBase, width: 36, height: 36, backgroundColor: "transparent" }}>
+              <ZoomOut className="w-5 h-5" />
+            </button>
+            <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, minWidth: 48, textAlign: "center" }}>
+              {Math.round(scale * 100)}%
+            </span>
+            <button onClick={() => zoom(1.3)}
+              style={{ ...btnBase, width: 36, height: 36, backgroundColor: "transparent" }}>
+              <ZoomIn className="w-5 h-5" />
+            </button>
+          </div>
         </>
       )}
-
-      {/* Área da imagem */}
-      <div
-        className="w-full h-full flex items-center justify-center overflow-hidden"
-        style={{ touchAction: "none" }}
-        onWheel={onWheel}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        <img
-          src={images[idx]}
-          alt={`Imagem ${idx + 1}`}
-          draggable={false}
-          onDoubleClick={onDblClick}
-          onClick={e => e.stopPropagation()}
-          style={{
-            maxHeight: "90vh",
-            maxWidth: "90vw",
-            objectFit: "contain",
-            userSelect: "none",
-            cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in",
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-            transition: isDragging ? "none" : "transform 0.12s ease",
-          }}
-        />
-      </div>
     </div>,
     document.body
   );
