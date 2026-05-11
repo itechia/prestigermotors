@@ -1,5 +1,5 @@
 // Service Worker básico para PWA instalável com cache de shell.
-const CACHE_NAME = "automarket-v1";
+const CACHE_NAME = "automarket-v3";
 const SHELL = ["/", "/manifest.json"];
 
 self.addEventListener("install", (event) => {

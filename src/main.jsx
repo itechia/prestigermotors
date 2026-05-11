@@ -22,8 +22,9 @@ queryClientInstance.prefetchQuery({
   staleTime: FIVE_MIN,
 });
 
-// Registra o Service Worker para PWA instalável (somente em produção / https)
-if ("serviceWorker" in navigator) {
+// Registra o Service Worker apenas em produção — nunca no dev server do Vite,
+// pois o SW cachearia módulos HMR e causaria tela branca ao servir arquivos antigos.
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
