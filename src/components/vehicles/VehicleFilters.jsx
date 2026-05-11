@@ -6,12 +6,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Label } from "@/components/ui/label";
 import MobileSearchableSelect from "@/components/vehicles/MobileSearchableSelect";
 import PriceRangeSlider from "@/components/vehicles/PriceRangeSlider";
+import { useTaxonomies, slugify } from "@/lib/useTaxonomies";
 
 // Inside the filters sheet we use MobileSearchableSelect (inline expanding list)
 // instead of SearchableSelect (popover). Popover-inside-Sheet causes a "double
 // tap to open" bug on mobile and prevents proper scrolling on long lists.
 const SearchableSelect = MobileSearchableSelect;
-import { useTaxonomies, slugify } from "@/lib/useTaxonomies";
 
 // Multi-select fields use arrays. Empty array = "Todos".
 export const DEFAULT_FILTERS = {
@@ -35,38 +35,102 @@ const NEXT_YEAR = new Date().getFullYear() + 1;
 const sortAlpha = (arr) =>
   [...arr].sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
 
+// Applies all active filters, optionally skipping one or more keys.
+// Mirrors the Catalog.jsx filter logic so availability is always accurate.
+function applyFilters(vehicles, filters, selectedBrands, search, skipKeys = []) {
+  const skip = new Set(skipKeys);
+  const matchAny = (arr, val) => !arr || arr.length === 0 || arr.includes(val);
+  return vehicles.filter((v) => {
+    if (v.hidden) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!`${v.brand} ${v.model} ${v.version || ""}`.toLowerCase().includes(q)) return false;
+    }
+    if (selectedBrands.length > 0) {
+      const vBrand = (v.brand || "").toLowerCase();
+      if (!selectedBrands.some((b) => String(b).toLowerCase() === vBrand)) return false;
+    }
+    if (!skip.has("vehicle_type") && !matchAny(filters.vehicle_type, v.vehicle_type || "")) return false;
+    if (!skip.has("body_type") && !matchAny(filters.body_type, v.body_type)) return false;
+    if (!skip.has("fuel_type") && !matchAny(filters.fuel_type, v.fuel_type)) return false;
+    if (!skip.has("transmission") && !matchAny(filters.transmission, v.transmission)) return false;
+    if (!skip.has("condition") && !matchAny(filters.condition, v.condition)) return false;
+    if (!skip.has("color") && !matchAny(filters.color, slugify(v.color))) return false;
+    if (!skip.has("model") && !matchAny(filters.model, slugify(v.model))) return false;
+    if (!skip.has("brand") && !matchAny(filters.brand, slugify(v.brand))) return false;
+    if (!skip.has("price")) {
+      if (filters.priceMin > 0 && v.price < filters.priceMin) return false;
+      if (filters.priceMax > 0 && v.price > filters.priceMax) return false;
+    }
+    if (!skip.has("year")) {
+      const vehicleYear = v.manufacture_year || v.year || 0;
+      if (filters.yearMin > 0 && vehicleYear < filters.yearMin) return false;
+      if (filters.yearMax > 0 && vehicleYear > filters.yearMax) return false;
+    }
+    return true;
+  });
+}
+
+// Keeps only taxonomy options that exist in the available pool.
+// Always preserves already-selected values so selections don't vanish.
+function smartOpts(taxOptions, availableSet, selectedValues) {
+  const selected = new Set(selectedValues);
+  return sortAlpha(
+    taxOptions.filter((o) => selected.has(o.value) || availableSet.has(o.value))
+  );
+}
+
 export default function VehicleFilters({ filters, setFilters, search, setSearch, selectedBrands = [], vehicles = [] }) {
   const tax = useTaxonomies();
   const [localFilters, setLocalFilters] = useState(filters);
   const [open, setOpen] = useState(false);
   useEffect(() => setLocalFilters(filters), [filters]);
 
-  // Models are filtered by the brands selected on the home (BrandPills), not by an in-sheet brand.
-  const localModelOptions = useMemo(() => {
+  // For each dimension, compute which values actually have vehicles in stock
+  // while all OTHER local filters are already applied. This makes selecting
+  // "Carro" immediately narrow down models/categories/etc. to car stock only.
+  const available = useMemo(() => {
+    const pool = (key) => applyFilters(vehicles, localFilters, selectedBrands, search, [key]);
+    return {
+      vehicle_type: new Set(pool("vehicle_type").map((v) => v.vehicle_type || "")),
+      body_type:    new Set(pool("body_type").map((v) => v.body_type || "")),
+      fuel_type:    new Set(pool("fuel_type").map((v) => v.fuel_type || "")),
+      transmission: new Set(pool("transmission").map((v) => v.transmission || "")),
+      condition:    new Set(pool("condition").map((v) => v.condition || "")),
+      color:        new Set(pool("color").map((v) => slugify(v.color))),
+      model:        new Set(pool("model").map((v) => slugify(v.model))),
+      brand:        new Set(pool("brand").map((v) => slugify(v.brand))),
+    };
+  }, [vehicles, localFilters, selectedBrands, search]);
+
+  // Smart option lists — only values with stock (plus any already selected)
+  const opt = useMemo(() => ({
+    types:         smartOpts(tax.vehicle_types, available.vehicle_type, localFilters.vehicle_type),
+    categories:    smartOpts(tax.categories,    available.body_type,    localFilters.body_type),
+    fuels:         smartOpts(tax.fuels,         available.fuel_type,    localFilters.fuel_type),
+    transmissions: smartOpts(tax.transmissions, available.transmission, localFilters.transmission),
+    conditions:    smartOpts(tax.conditions,    available.condition,    localFilters.condition),
+    colors:        smartOpts(tax.colors,        available.color,        localFilters.color),
+  }), [tax, available, localFilters]);
+
+  // Models: filtered by brand pills AND smart availability
+  const modelOptions = useMemo(() => {
     const base = (!selectedBrands || selectedBrands.length === 0)
       ? tax.models
       : tax.models.filter((m) => !m.parent || selectedBrands.some((b) => slugify(b) === m.parent));
-    return sortAlpha(base.map((m) => ({ label: m.label, value: m.value })));
-  }, [tax.models, selectedBrands]);
+    return sortAlpha(
+      base.filter((m) => localFilters.model.includes(m.value) || available.model.has(m.value))
+    );
+  }, [tax.models, selectedBrands, available.model, localFilters.model]);
 
-  const opt = {
-    types: useMemo(() => sortAlpha(tax.vehicle_types), [tax.vehicle_types]),
-    categories: useMemo(() => sortAlpha(tax.categories), [tax.categories]),
-    fuels: useMemo(() => sortAlpha(tax.fuels), [tax.fuels]),
-    transmissions: useMemo(() => sortAlpha(tax.transmissions), [tax.transmissions]),
-    conditions: useMemo(() => sortAlpha(tax.conditions), [tax.conditions]),
-    colors: useMemo(() => sortAlpha(tax.colors), [tax.colors]),
-  };
+  // Price slider sees only vehicles that pass all non-price filters
+  const vehiclesForPrice = useMemo(
+    () => applyFilters(vehicles, localFilters, selectedBrands, search, ["price"]),
+    [vehicles, localFilters, selectedBrands, search]
+  );
 
-  const apply = () => {
-    setFilters(localFilters);
-    setOpen(false);
-  };
-  const clear = () => {
-    setLocalFilters(DEFAULT_FILTERS);
-    setFilters(DEFAULT_FILTERS);
-    // Keep the sheet open so the user can continue refining filters
-  };
+  const apply = () => { setFilters(localFilters); setOpen(false); };
+  const clear = () => { setLocalFilters(DEFAULT_FILTERS); setFilters(DEFAULT_FILTERS); };
 
   const activeCount = useMemo(() => {
     let n = 0;
@@ -116,7 +180,7 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
                 value={localFilters.vehicle_type}
                 onChange={(v) => setLocalFilters({ ...localFilters, vehicle_type: v })}
                 options={opt.types}
-                placeholder={opt.types.length === 0 ? "Cadastre tipos no admin" : "Todos"}
+                placeholder={opt.types.length === 0 ? "Nenhum tipo em estoque" : "Todos"}
                 disabled={opt.types.length === 0}
               />
             </FilterField>
@@ -127,6 +191,8 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
                 value={localFilters.body_type}
                 onChange={(v) => setLocalFilters({ ...localFilters, body_type: v })}
                 options={opt.categories}
+                placeholder={opt.categories.length === 0 ? "Nenhuma em estoque" : "Todas"}
+                disabled={opt.categories.length === 0}
               />
             </FilterField>
 
@@ -135,9 +201,9 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
                 multiple
                 value={localFilters.model}
                 onChange={(v) => setLocalFilters({ ...localFilters, model: v })}
-                options={localModelOptions}
-                placeholder={localModelOptions.length === 0 ? "Cadastre modelos no admin" : "Todos"}
-                disabled={localModelOptions.length === 0}
+                options={modelOptions}
+                placeholder={modelOptions.length === 0 ? "Nenhum em estoque" : "Todos"}
+                disabled={modelOptions.length === 0}
               />
             </FilterField>
 
@@ -148,6 +214,8 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
                   value={localFilters.fuel_type}
                   onChange={(v) => setLocalFilters({ ...localFilters, fuel_type: v })}
                   options={opt.fuels}
+                  placeholder={opt.fuels.length === 0 ? "—" : "Todos"}
+                  disabled={opt.fuels.length === 0}
                 />
               </FilterField>
 
@@ -157,6 +225,8 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
                   value={localFilters.transmission}
                   onChange={(v) => setLocalFilters({ ...localFilters, transmission: v })}
                   options={opt.transmissions}
+                  placeholder={opt.transmissions.length === 0 ? "—" : "Todos"}
+                  disabled={opt.transmissions.length === 0}
                 />
               </FilterField>
 
@@ -166,6 +236,8 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
                   value={localFilters.condition}
                   onChange={(v) => setLocalFilters({ ...localFilters, condition: v })}
                   options={opt.conditions}
+                  placeholder={opt.conditions.length === 0 ? "—" : "Todos"}
+                  disabled={opt.conditions.length === 0}
                 />
               </FilterField>
 
@@ -175,7 +247,7 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
                   value={localFilters.color}
                   onChange={(v) => setLocalFilters({ ...localFilters, color: v })}
                   options={opt.colors}
-                  placeholder={opt.colors.length === 0 ? "Cadastre cores no admin" : "Todas"}
+                  placeholder={opt.colors.length === 0 ? "Nenhuma em estoque" : "Todas"}
                   disabled={opt.colors.length === 0}
                 />
               </FilterField>
@@ -185,7 +257,7 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
               <PriceRangeSlider
                 min={localFilters.priceMin}
                 max={localFilters.priceMax}
-                vehicles={vehicles}
+                vehicles={vehiclesForPrice}
                 onChange={({ priceMin, priceMax }) =>
                   setLocalFilters({ ...localFilters, priceMin, priceMax })
                 }
