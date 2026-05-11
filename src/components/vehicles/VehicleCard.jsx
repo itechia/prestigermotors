@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Gauge, Calendar, Flame, MessageCircle, RotateCw, ExternalLink } from "lucide-react";
+import { Gauge, Calendar, Flame, MessageCircle, RotateCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
 import { useStoreSettings } from "@/lib/useStoreSettings";
@@ -38,27 +38,16 @@ export default function VehicleCard({ vehicle, index = 0 }) {
     >
       <div className="group flex flex-col h-full bg-card rounded-3xl overflow-hidden border border-border/50 hover:border-border hover:shadow-xl transition-all duration-300">
 
-        {/* ── Área de imagem / embed ───────────────────── */}
+        {/* ── Área de imagem ───────────────────────────── */}
         <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-          {hasEmbed ? (
-            /* iframe interativo — clique no conteúdo abaixo para navegar */
-            <iframe
-              srcDoc={vehicle.embed_html}
-              title={`${vehicle.brand} ${vehicle.model} 360°`}
-              sandbox="allow-scripts allow-same-origin"
-              scrolling="no"
-              className="w-full h-full border-0 block"
+          <Link to={detailHref} className="block w-full h-full">
+            <img
+              src={mainImage}
+              alt={`${vehicle.brand} ${vehicle.model}`}
+              className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+              loading="lazy"
             />
-          ) : (
-            <Link to={detailHref} className="block w-full h-full">
-              <img
-                src={mainImage}
-                alt={`${vehicle.brand} ${vehicle.model}`}
-                className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
-                loading="lazy"
-              />
-            </Link>
-          )}
+          </Link>
 
           {/* Gradient overlay */}
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
@@ -87,19 +76,12 @@ export default function VehicleCard({ vehicle, index = 0 }) {
             )}
           </div>
 
-          {/* Badge 360° + link "Ver detalhes" quando há embed */}
+          {/* Badge 360° quando há embed */}
           {hasEmbed && (
-            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between z-10">
-              <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[10px] font-bold pointer-events-none">
+            <div className="absolute bottom-3 left-3 pointer-events-none">
+              <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
                 <RotateCw className="w-3 h-3" /> 360°
               </span>
-              <Link
-                to={detailHref}
-                className="flex items-center gap-1 bg-white/90 hover:bg-white text-slate-900 text-[10px] font-bold px-2.5 py-1 rounded-full shadow transition-colors"
-                onClick={e => e.stopPropagation()}
-              >
-                Ver detalhes <ExternalLink className="w-3 h-3" />
-              </Link>
             </div>
           )}
         </div>
