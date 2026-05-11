@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Car, Tag, Home, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -93,8 +93,14 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-safe">
-        <Outlet />
+      <main className="flex-1 px-safe flex flex-col relative">
+        <Suspense fallback={
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="w-8 h-8 border-4 border-secondary border-t-primary rounded-full animate-spin"></div>
+          </div>
+        }>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Footer — visible on mobile and desktop. Adds bottom padding on mobile so the fixed bottom nav doesn't cover its content. */}

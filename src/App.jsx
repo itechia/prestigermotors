@@ -39,24 +39,26 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/admin/login" element={<AdminLogin />} />
+    <Routes>
+      <Route path="/admin/login" element={
+        <Suspense fallback={<PageLoader />}>
+          <AdminLogin />
+        </Suspense>
+      } />
 
-        <Route element={<Layout />}>
-          <Route path="/" element={<Catalog />} />
-          <Route path="/veiculo/:id" element={<VehicleDetail />} />
-          <Route path="/vender" element={<SellMyVehicle />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/veiculos" element={<AdminVehicles />} />
-          <Route path="/admin/propostas" element={<AdminSellLeads />} />
-          <Route path="/admin/configuracoes" element={<AdminSettings />} />
-          <Route path="/admin/veiculo/:id" element={<AdminVehicleEditor />} />
-        </Route>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Catalog />} />
+        <Route path="/veiculo/:id" element={<VehicleDetail />} />
+        <Route path="/vender" element={<SellMyVehicle />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/veiculos" element={<AdminVehicles />} />
+        <Route path="/admin/propostas" element={<AdminSellLeads />} />
+        <Route path="/admin/configuracoes" element={<AdminSettings />} />
+        <Route path="/admin/veiculo/:id" element={<AdminVehicleEditor />} />
+      </Route>
 
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
-    </Suspense>
+      <Route path="*" element={<PageNotFound />} />
+    </Routes>
   );
 };
 
