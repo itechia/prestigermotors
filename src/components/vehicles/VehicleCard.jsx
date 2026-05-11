@@ -44,12 +44,24 @@ function VehicleCard({ vehicle, index = 0 }) {
         {/* ── Área de imagem ───────────────────────────── */}
         <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
           <Link to={detailHref} className="block w-full h-full">
-            <img
-              src={mainImage}
-              alt={`${vehicle.brand} ${vehicle.model}`}
-              className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
-              loading="lazy"
-            />
+            {hasEmbed ? (
+              /* 360° embed como capa — pointer-events-none para o clique ir para o Link */
+              <iframe
+                srcDoc={vehicle.embed_html}
+                title={`${vehicle.brand} ${vehicle.model} 360°`}
+                sandbox="allow-scripts allow-same-origin"
+                scrolling="no"
+                tabIndex={-1}
+                className="w-full h-full border-0 block pointer-events-none"
+              />
+            ) : (
+              <img
+                src={mainImage}
+                alt={`${vehicle.brand} ${vehicle.model}`}
+                className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                loading="lazy"
+              />
+            )}
           </Link>
 
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -7,7 +8,8 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Share2, MessageCircle,
   Gauge, Fuel, Calendar, Settings, Palette, DoorOpen, Check,
-  Clock, Flame, TrendingDown, ChevronLeft, ChevronRight, RotateCw
+  Clock, Flame, TrendingDown, ChevronLeft, ChevronRight, RotateCw,
+  X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,7 @@ export default function VehicleDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [thumbOffset, setThumbOffset] = useState(0);
   const [interestOpen, setInterestOpen] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(null); // null = fechado
 
   // Always start at the top when opening a vehicle
   useEffect(() => {
@@ -152,7 +155,12 @@ export default function VehicleDetail() {
                 className="w-full h-full border-0 block"
               />
             ) : (
-              <img src={images[imageIndex]} alt={vehicle.model} className="w-full h-full object-cover" />
+              <img
+                src={images[imageIndex]}
+                alt={vehicle.model}
+                className="w-full h-full object-cover cursor-zoom-in"
+                onClick={() => setLightboxIdx(imageIndex)}
+              />
             )}
 
             <div className="absolute top-4 left-4 flex gap-2">
@@ -421,6 +429,14 @@ export default function VehicleDetail() {
         onOpenChange={setInterestOpen}
         vehicle={vehicle}
       />
+
+      {lightboxIdx !== null && (
+        <ImageLightbox
+          images={images}
+          initialIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />
+      )}
     </div>
   );
 }
@@ -442,5 +458,183 @@ function DetailRow({ label, value }) {
       <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
       <div className="font-semibold text-sm mt-0.5">{value}</div>
     </div>
+  );
+}
+
+function ImageLightbox({ images, initialIndex, onClose }) {
+  const [idx, setIdx] = useState(initialIndex);
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOrigin = useRef({ x: 0, y: 0 });
+  const panAtStart = useRef({ x: 0, y: 0 });
+  const pinchDist = useRef(null);
+  const pinchScale = useRef(1);
+
+  // Bloqueia scroll do body
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  // Reset zoom ao trocar imagem
+  useEffect(() => { setScale(1); setPan({ x: 0, y: 0 }); }, [idx]);
+
+  // Teclado
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") setIdx(i => (i - 1 + images.length) % images.length);
+      if (e.key === "ArrowRight") setIdx(i => (i + 1) % images.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [images.length, onClose]);
+
+  const zoom = (factor) =>
+    setScale(s => {
+      const next = Math.min(Math.max(s * factor, 1), 6);
+      if (next === 1) setPan({ x: 0, y: 0 });
+      return next;
+    });
+
+  // Mouse wheel
+  const onWheel = (e) => {
+    e.preventDefault();
+    zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15);
+  };
+
+  // Mouse drag
+  const onMouseDown = (e) => {
+    if (scale <= 1) return;
+    e.preventDefault();
+    setIsDragging(true);
+    dragOrigin.current = { x: e.clientX, y: e.clientY };
+    panAtStart.current = { ...pan };
+  };
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+    setPan({
+      x: panAtStart.current.x + (e.clientX - dragOrigin.current.x),
+      y: panAtStart.current.y + (e.clientY - dragOrigin.current.y),
+    });
+  };
+  const onMouseUp = () => setIsDragging(false);
+
+  // Touch: pinch zoom + drag
+  const onTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchDist.current = Math.sqrt(dx * dx + dy * dy);
+      pinchScale.current = scale;
+    } else if (e.touches.length === 1 && scale > 1) {
+      setIsDragging(true);
+      dragOrigin.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      panAtStart.current = { ...pan };
+    }
+  };
+  const onTouchMove = (e) => {
+    e.preventDefault();
+    if (e.touches.length === 2 && pinchDist.current) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      setScale(Math.min(Math.max(pinchScale.current * (dist / pinchDist.current), 1), 6));
+    } else if (e.touches.length === 1 && isDragging) {
+      setPan({
+        x: panAtStart.current.x + (e.touches[0].clientX - dragOrigin.current.x),
+        y: panAtStart.current.y + (e.touches[0].clientY - dragOrigin.current.y),
+      });
+    }
+  };
+  const onTouchEnd = () => { setIsDragging(false); pinchDist.current = null; };
+
+  // Duplo clique: alternar zoom 1x / 2.5x
+  const onDblClick = () => {
+    if (scale > 1) { setScale(1); setPan({ x: 0, y: 0 }); }
+    else setScale(2.5);
+  };
+
+  const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); };
+  const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[999] bg-black/96 flex items-center justify-center select-none"
+      onClick={scale <= 1 ? onClose : undefined}
+    >
+      {/* Fechar */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
+      {/* Contador */}
+      {images.length > 1 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 text-white/60 text-sm font-medium tabular-nums">
+          {idx + 1} / {images.length}
+        </div>
+      )}
+
+      {/* Controles de zoom */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-full px-5 py-2.5">
+        <button onClick={() => zoom(1 / 1.3)} className="text-white/70 hover:text-white transition-colors">
+          <ZoomOut className="w-5 h-5" />
+        </button>
+        <span className="text-white text-sm font-semibold w-12 text-center tabular-nums">
+          {Math.round(scale * 100)}%
+        </span>
+        <button onClick={() => zoom(1.3)} className="text-white/70 hover:text-white transition-colors">
+          <ZoomIn className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Setas de navegação */}
+      {images.length > 1 && (
+        <>
+          <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </>
+      )}
+
+      {/* Área da imagem */}
+      <div
+        className="w-full h-full flex items-center justify-center overflow-hidden"
+        style={{ touchAction: "none" }}
+        onWheel={onWheel}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <img
+          src={images[idx]}
+          alt={`Imagem ${idx + 1}`}
+          draggable={false}
+          onDoubleClick={onDblClick}
+          onClick={e => e.stopPropagation()}
+          style={{
+            maxHeight: "90vh",
+            maxWidth: "90vw",
+            objectFit: "contain",
+            userSelect: "none",
+            cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+            transition: isDragging ? "none" : "transform 0.12s ease",
+          }}
+        />
+      </div>
+    </div>,
+    document.body
   );
 }
