@@ -1,0 +1,91 @@
+// Default content used when StoreSettings has no value for a field.
+// Keeps the site fully functional on first render, even if admin hasn't
+// customised anything yet.
+
+export const DEFAULT_SETTINGS = {
+  store_name: "Automatizei AI",
+  store_name_font: "Plus Jakarta Sans",
+  store_tagline: "Veículos selecionados com inteligência.",
+  logo_url: "",
+  whatsapp_number: "",
+  phone_number: "",
+  address: "",
+  instagram_url: "",
+  facebook_url: "",
+  youtube_url: "",
+  tiktok_url: "",
+  social_show_instagram: true,
+  social_show_facebook: true,
+  social_show_youtube: true,
+  social_show_tiktok: true,
+  social_show_whatsapp: true,
+
+  hero_eyebrow: "",
+  hero_title: "",
+  hero_highlight: "",
+  hero_subtitle: "",
+  hero_image_url: "",
+  hero_image_url_mobile: "",
+  hero_slides: [],
+  brands: [],
+  hero_stat_rating: "",
+  hero_stat_rating_label: "",
+  hero_stat_2_value: "",
+  hero_stat_2_label: "",
+  hero_stat_3_value: "",
+  hero_stat_3_label: "",
+
+  trust_items: [],
+
+  guarantee_section_title: "",
+  guarantee_section_subtitle: "",
+  guarantees: [],
+
+  reviews_rating: "",
+  reviews_count: "",
+  reviews_title: "",
+  reviews_visible: true,
+  reviews: [],
+
+  lead_form_title: "Tenho interesse neste veículo",
+  lead_form_subtitle: "Preencha seus dados e nossa equipe entra em contato em poucos minutos.",
+  lead_form_message: "Olá! Sou {name}. Tenho interesse no {vehicle} ({price}). Meu telefone: {phone}",
+
+  footer_text: "",
+  footer_about: "Plataforma inteligente para compra e venda de veículos. Transparência, segurança e agilidade em cada negócio.",
+  footer_institutional: [],
+  footer_help: [],
+  footer_payment: [],
+
+  // Configurable taxonomies (admin > Categorias). Empty by default — useTaxonomies()
+  // applies legacy fallbacks for the lists that already had hard-coded enums.
+  tax_vehicle_types: [],
+  tax_categories: [],
+  tax_models: [],
+  tax_colors: [],
+  tax_fuels: [],
+  tax_transmissions: [],
+  tax_conditions: [],
+
+  // Webhooks & automations (opt-in)
+  interest_webhook_enabled: false,
+  interest_webhook_url: "",
+  interest_webhook_secret: "",
+  interest_form_title: "Tenho interesse neste veículo",
+  interest_form_subtitle: "Preencha seus dados e nossa equipe entra em contato em poucos minutos.",
+  interest_form_submit_label: "Enviar interesse",
+  interest_form_success_message: "Recebemos seu interesse! Nossa equipe vai te chamar em instantes.",
+  interest_form_fields: [],
+
+  sell_webhook_enabled: false,
+  sell_webhook_url: "",
+  sell_webhook_secret: "",
+};
+
+// Merge admin-provided settings with defaults for every field.
+export function withDefaults(settings) {
+  if (!settings) return DEFAULT_SETTINGS;
+  return { ...DEFAULT_SETTINGS, ...settings };
+}
+
+export const SETTINGS_SINGLETON_QUERY_KEY = ["store-settings"];
