@@ -28,6 +28,7 @@ export default function VehicleDetail() {
   const tax = useTaxonomies();
   const labels = buildResolvers(tax);
   const [activeImage, setActiveImage] = useState(0);
+  const [showEmbed, setShowEmbed] = useState(false);
   const [interestOpen, setInterestOpen] = useState(false);
 
   // Always start at the top when opening a vehicle
@@ -69,8 +70,6 @@ export default function VehicleDetail() {
     : ["https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80"];
 
   const hasEmbed = Boolean(vehicle.embed_html?.trim());
-  // When an embed exists, it occupies index 0 (replacing the cover image).
-  const showingEmbed = hasEmbed && activeImage === 0;
 
   const meta = getVehicleMeta(vehicle);
   // Coerce to boolean so JSX never renders the falsy `0` (e.g. when price_old=0).
@@ -108,12 +107,8 @@ export default function VehicleDetail() {
     }
   };
 
-  // Slide 0 = embed (quando existe); slides 1..N = images[0..N-1]
-  const totalSlides = (hasEmbed ? 1 : 0) + images.length;
-  const nextImage = () => setActiveImage((i) => (i + 1) % totalSlides);
-  const prevImage = () => setActiveImage((i) => (i - 1 + totalSlides) % totalSlides);
-  // índice real na array images (desconta o slot do embed)
-  const imageIndex = hasEmbed ? activeImage - 1 : activeImage;
+  const nextImage = () => { setShowEmbed(false); setActiveImage(i => (i + 1) % images.length); };
+  const prevImage = () => { setShowEmbed(false); setActiveImage(i => (i - 1 + images.length) % images.length); };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -128,14 +123,13 @@ export default function VehicleDetail() {
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
           <motion.div
-            key={activeImage}
+            key={showEmbed ? "embed" : activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
             className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
           >
-            {showingEmbed ? (
+            {showEmbed ? (
               <iframe
-                key="embed"
                 srcDoc={vehicle.embed_html}
                 title={`${vehicle.brand} ${vehicle.model} 360°`}
                 sandbox="allow-scripts allow-same-origin"
@@ -143,7 +137,7 @@ export default function VehicleDetail() {
                 className="w-full h-full border-0 block"
               />
             ) : (
-              <img src={images[imageIndex]} alt={vehicle.model} className="w-full h-full object-cover" />
+              <img src={images[activeImage]} alt={vehicle.model} className="w-full h-full object-cover" />
             )}
 
             <div className="absolute top-4 left-4 flex gap-2">
@@ -168,7 +162,7 @@ export default function VehicleDetail() {
               </button>
             </div>
 
-            {totalSlides > 1 && (
+            {images.length > 1 && !showEmbed && (
               <>
                 <button
                   onClick={prevImage}
@@ -184,43 +178,37 @@ export default function VehicleDetail() {
                 </button>
               </>
             )}
-
           </motion.div>
 
-          {totalSlides > 1 && (
-            <div className="grid grid-cols-5 gap-2">
-              {/* Slot 0: embed 360° */}
-              {hasEmbed && (
+          {/* Thumbnails — scroll horizontal, sem limite de fotos */}
+          {(images.length > 1 || hasEmbed) && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {images.map((img, i) => (
                 <button
-                  key="embed-thumb"
-                  onClick={() => setActiveImage(0)}
+                  key={i}
+                  onClick={() => { setActiveImage(i); setShowEmbed(false); }}
                   className={cn(
-                    "aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                    activeImage === 0 ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
+                    "flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden border-2 transition-all",
+                    activeImage === i && !showEmbed ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
                   )}
                 >
-                  <div className="w-full h-full bg-primary text-primary-foreground flex flex-col items-center justify-center gap-1">
-                    <RotateCw className="w-5 h-5" />
-                    <span className="text-[10px] font-bold tracking-wider">360°</span>
-                  </div>
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+              {hasEmbed && (
+                <button
+                  onClick={() => setShowEmbed(true)}
+                  className={cn(
+                    "flex-shrink-0 w-[72px] h-[72px] rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
+                    showEmbed
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
+                  )}
+                >
+                  <RotateCw className="w-5 h-5" />
+                  <span className="text-[10px] font-bold tracking-wider">360°</span>
                 </button>
               )}
-              {/* Slots 1..N: fotos reais */}
-              {images.slice(0, hasEmbed ? 4 : 5).map((img, i) => {
-                const slideIdx = hasEmbed ? i + 1 : i;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setActiveImage(slideIdx)}
-                    className={cn(
-                      "aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                      activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
-                );
-              })}
             </div>
           )}
         </div>

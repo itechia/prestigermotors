@@ -61,23 +61,26 @@ function createEntityService(tableName) {
 
     /** create(data) → retorna o registro criado */
     async create(data) {
-      const { data: result, error } = await supabase
+      // Gera o UUID no cliente para não precisar de SELECT pós-insert
+      // (anônimos têm permissão de INSERT mas não de SELECT em sell_leads)
+      const id = crypto.randomUUID();
+      const payload = { id, ...withTimestamps(data, true) };
+
+      const { error } = await supabase
         .from(tableName)
-        .insert(withTimestamps(data, true))
-        .select()
-        .single();
+        .insert(payload);
       if (error) throw error;
 
       // Dispara webhook de venda em background se for SellLead
-      if (tableName === 'sell_leads' && result?.id) {
+      if (tableName === 'sell_leads') {
         fetch('/api/send-sell-lead-webhook', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lead_id: result.id }),
+          body: JSON.stringify({ lead_id: id }),
         }).catch(() => {});
       }
 
-      return result;
+      return payload;
     },
 
     /** update(id, data) → retorna o registro atualizado */
