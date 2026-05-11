@@ -93,11 +93,8 @@ export default function SiteFooter() {
           />
         </div>
 
-        <div className="mt-10 pt-6 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+        <div className="mt-10 pt-6 border-t border-border text-center text-xs text-muted-foreground">
           <span>© {year} {s.store_name}. Todos os direitos reservados.</span>
-          <a href="/admin/login" className="hover:text-foreground transition-colors">
-            Admin
-          </a>
         </div>
       </div>
     </footer>
