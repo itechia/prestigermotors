@@ -5,7 +5,13 @@
       "Bash(npm run *)",
       "Bash(npx vite *)",
       "Bash(echo \"EXIT_CODE:$?\")",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__get_advisors",
+      "Bash(git commit -m ' *)",
+      "Bash(del \"c:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\src\\\\api\\\\base44Client.js\")",
+      "Bash(npx eslint *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
