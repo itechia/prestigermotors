@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { fetchVehiclesCatalog, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import VehicleCard from "./VehicleCard";
 
@@ -26,8 +26,8 @@ export default function SimilarVehicles({ vehicle }) {
   const [canNext, setCanNext] = useState(false);
 
   const { data: vehicles = [] } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: () => base44.entities.Vehicle.list("-created_date", 200),
+    queryKey: VEHICLES_QUERY_KEY,
+    queryFn: fetchVehiclesCatalog,
   });
 
   const similar = useMemo(() => {

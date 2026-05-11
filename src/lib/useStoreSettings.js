@@ -1,16 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
 import { withDefaults, SETTINGS_SINGLETON_QUERY_KEY } from "@/lib/defaults";
+
+async function fetchSettings() {
+  const { data, error } = await supabase
+    .from("store_settings")
+    .select("*")
+    .order("updated_date", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
 
 // Fetches the single StoreSettings record (or returns defaults if none exists).
 // Usage: const settings = useStoreSettings();
 export function useStoreSettings() {
   const { data } = useQuery({
     queryKey: SETTINGS_SINGLETON_QUERY_KEY,
-    queryFn: async () => {
-      const list = await base44.entities.StoreSettings.list("-updated_date", 1);
-      return list[0] || null;
-    },
+    queryFn: fetchSettings,
     staleTime: 5 * 60 * 1000,
   });
   return withDefaults(data);
@@ -20,10 +27,7 @@ export function useStoreSettings() {
 export function useStoreSettingsRaw() {
   return useQuery({
     queryKey: SETTINGS_SINGLETON_QUERY_KEY,
-    queryFn: async () => {
-      const list = await base44.entities.StoreSettings.list("-updated_date", 1);
-      return list[0] || null;
-    },
+    queryFn: fetchSettings,
     staleTime: 5 * 60 * 1000,
   });
 }

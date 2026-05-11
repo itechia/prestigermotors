@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 import { queryClientInstance } from '@/lib/query-client'
-import { base44 } from '@/api/base44Client'
+import { supabase } from '@/api/supabaseClient'
 import { SETTINGS_SINGLETON_QUERY_KEY } from '@/lib/defaults'
 import { fetchVehiclesCatalog, VEHICLES_QUERY_KEY, FIVE_MIN } from '@/lib/vehicleQueries'
 
@@ -16,8 +16,12 @@ queryClientInstance.prefetchQuery({
 queryClientInstance.prefetchQuery({
   queryKey: SETTINGS_SINGLETON_QUERY_KEY,
   queryFn: async () => {
-    const list = await base44.entities.StoreSettings.list("-updated_date", 1);
-    return list[0] || null;
+    const { data } = await supabase
+      .from("store_settings")
+      .select("*")
+      .order("updated_date", { ascending: false })
+      .limit(1);
+    return data?.[0] ?? null;
   },
   staleTime: FIVE_MIN,
 });

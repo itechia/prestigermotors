@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/supabaseClient";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -43,8 +43,13 @@ export default function VehicleDetail() {
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ["vehicle", id],
     queryFn: async () => {
-      const list = await base44.entities.Vehicle.filter({ id });
-      return list[0];
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data ?? null;
     },
     // staleTime 0: se o cache tiver dados leves do catálogo, mostra imediatamente
     // e revalida em background para preencher description/features
