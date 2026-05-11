@@ -209,7 +209,7 @@ export default function AdminSellLeads() {
   );
 }
 
-function StatusChip({ label, count, active, onClick, color }) {
+function StatusChip({ label, count, active, onClick, color: _color }) {
   return (
     <button
       onClick={onClick}

@@ -1,5 +1,5 @@
 import React from "react";
-import { SettingsSection, TextField, TextAreaField } from "@/components/admin/SettingsField";
+import { SettingsSection, TextAreaField } from "@/components/admin/SettingsField";
 import ArrayFieldEditor from "@/components/admin/ArrayFieldEditor";
 import { Input } from "@/components/ui/input";
 import {

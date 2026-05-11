@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 
 // Generic reusable editor for lists of objects (trust items, guarantees, reviews).

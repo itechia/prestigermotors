@@ -40,6 +40,17 @@ export default function VehicleDetail() {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [id]);
 
+  // Mantém a janela de thumbnails visível ao redor do slide ativo.
+  // Deve ficar antes dos early returns para não violar a rules-of-hooks.
+  const THUMB_COLS = 5;
+  useEffect(() => {
+    if (activeImage < thumbOffset) {
+      setThumbOffset(activeImage);
+    } else if (activeImage >= thumbOffset + THUMB_COLS) {
+      setThumbOffset(activeImage - THUMB_COLS + 1);
+    }
+  }, [activeImage, thumbOffset]);
+
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ["vehicle", id],
     queryFn: async () => {
@@ -104,7 +115,6 @@ export default function VehicleDetail() {
   // Rich WhatsApp message: title + specs + price + direct link to the vehicle.
   // The link generates a preview card with cover image (Mercado Livre style).
   const whatsappHref = buildWhatsAppHref(settings.whatsapp_number, vehicle);
-  const phoneHref = settings.phone_number ? `tel:${settings.phone_number.replace(/\s/g, "")}` : "tel:";
 
   // When the interest webhook is active, the "Tenho interesse" CTA opens the
   // customizable form modal instead of jumping straight to WhatsApp.
@@ -125,16 +135,6 @@ export default function VehicleDetail() {
   const imageIndex = hasEmbed ? activeImage - 1 : activeImage;
   const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
-
-  const THUMB_COLS = 5;
-  // Mantém a janela de thumbnails visível ao redor do slide ativo
-  useEffect(() => {
-    if (activeImage < thumbOffset) {
-      setThumbOffset(activeImage);
-    } else if (activeImage >= thumbOffset + THUMB_COLS) {
-      setThumbOffset(activeImage - THUMB_COLS + 1);
-    }
-  }, [activeImage, thumbOffset]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">

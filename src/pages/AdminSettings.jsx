@@ -46,7 +46,6 @@ export default function AdminSettings() {
   const save = useMutation({
     mutationFn: async () => {
       const now = new Date().toISOString();
-      // eslint-disable-next-line no-unused-vars
       const { id: _id, created_date: _cd, updated_date: _ud, created_by: _cb, ...payload } = form;
       if (record?.id) {
         const { error } = await supabase
