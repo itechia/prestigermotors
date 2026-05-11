@@ -32,8 +32,8 @@ export default function VehicleDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [thumbOffset, setThumbOffset] = useState(0);
   const [interestOpen, setInterestOpen] = useState(false);
-  // fsMode: null = fechado | { type:'image', idx:number } | { type:'embed' }
-  const [fsMode, setFsMode] = useState(null);
+  // fsSlide: null = fechado, número = slide inicial (embed=0 quando existe, depois imagens)
+  const [fsSlide, setFsSlide] = useState(null);
 
   // Always start at the top when opening a vehicle
   useEffect(() => {
@@ -46,6 +46,9 @@ export default function VehicleDetail() {
       const list = await base44.entities.Vehicle.filter({ id });
       return list[0];
     },
+    // staleTime 0: se o cache tiver dados leves do catálogo, mostra imediatamente
+    // e revalida em background para preencher description/features
+    staleTime: 0,
   });
 
   if (isLoading) {
@@ -156,9 +159,9 @@ export default function VehicleDetail() {
                   scrolling="no"
                   className="w-full h-full border-0 block"
                 />
-                {/* Botão para abrir o embed em tela cheia */}
+                {/* Abrir fullscreen no slide atual */}
                 <button
-                  onClick={() => setFsMode({ type: "embed" })}
+                  onClick={() => setFsSlide(activeImage)}
                   className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
                   title="Tela cheia"
                 >
@@ -170,7 +173,7 @@ export default function VehicleDetail() {
                 src={images[imageIndex]}
                 alt={vehicle.model}
                 className="w-full h-full object-cover cursor-zoom-in"
-                onClick={() => setFsMode({ type: "image", idx: imageIndex })}
+                onClick={() => setFsSlide(activeImage)}
               />
             )}
 
@@ -441,13 +444,14 @@ export default function VehicleDetail() {
         vehicle={vehicle}
       />
 
-      {fsMode && (
+      {fsSlide !== null && (
         <FullscreenViewer
-          type={fsMode.type}
-          images={images}
-          initialIdx={fsMode.idx ?? 0}
-          embedHtml={vehicle.embed_html}
-          onClose={() => setFsMode(null)}
+          slides={[
+            ...(hasEmbed ? [{ type: "embed", html: vehicle.embed_html }] : []),
+            ...images.map(src => ({ type: "image", src })),
+          ]}
+          initialSlide={fsSlide}
+          onClose={() => setFsSlide(null)}
         />
       )}
     </div>
@@ -474,11 +478,11 @@ function DetailRow({ label, value }) {
   );
 }
 
-// ─── Visualizador em tela cheia (imagens + embed 360°) ─────────────────────
-// Usa inline styles para garantir cobertura total — evita conflitos de z-index
-// com backdrop-filter do header/nav que criam stacking contexts próprios.
-function FullscreenViewer({ type, images, initialIdx, embedHtml, onClose }) {
-  const [idx, setIdx] = useState(initialIdx);
+// ─── Visualizador em tela cheia — carrossel unificado (embed + fotos) ──────
+// slides = [{ type:'embed', html }, { type:'image', src }, ...]
+// Usa inline styles para garantir cobertura total independente de stacking contexts.
+function FullscreenViewer({ slides, initialSlide, onClose }) {
+  const [idx, setIdx] = useState(initialSlide);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -500,12 +504,12 @@ function FullscreenViewer({ type, images, initialIdx, embedHtml, onClose }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") setIdx(i => (i - 1 + images.length) % images.length);
-      if (e.key === "ArrowRight") setIdx(i => (i + 1) % images.length);
+      if (e.key === "ArrowLeft") setIdx(i => (i - 1 + slides.length) % slides.length);
+      if (e.key === "ArrowRight") setIdx(i => (i + 1) % slides.length);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [images.length, onClose]);
+  }, [slides.length, onClose]);
 
   const zoom = (factor) =>
     setScale(s => {
@@ -572,14 +576,15 @@ function FullscreenViewer({ type, images, initialIdx, embedHtml, onClose }) {
     else setScale(2.5);
   };
 
-  const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); };
-  const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); };
+  const prev = (e) => { e.stopPropagation(); setIdx(i => (i - 1 + slides.length) % slides.length); };
+  const next = (e) => { e.stopPropagation(); setIdx(i => (i + 1) % slides.length); };
 
-  // Inline styles garantem cobertura total — Tailwind classes podem falhar
-  // quando backdrop-filter no header/nav cria stacking contexts que confundem z-index
+  const current = slides[idx];
+  const isImage = current?.type === "image";
+
   const overlay = {
     position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-    zIndex: 2147483647, // máximo possível
+    zIndex: 2147483647,
     backgroundColor: "#000",
     display: "flex", alignItems: "center", justifyContent: "center",
     userSelect: "none",
@@ -588,107 +593,99 @@ function FullscreenViewer({ type, images, initialIdx, embedHtml, onClose }) {
     display: "flex", alignItems: "center", justifyContent: "center",
     borderRadius: "50%", border: "none", cursor: "pointer",
     backgroundColor: "rgba(255,255,255,0.15)", color: "#fff",
-    transition: "background-color 0.15s",
   };
 
   return createPortal(
-    <div style={overlay} onClick={type === "image" && scale <= 1 ? onClose : undefined}>
+    <div style={overlay} onClick={isImage && scale <= 1 ? onClose : undefined}>
 
-      {/* ── Barra superior: fechar (direita) + contador (centro) ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 2,
-                    padding: "12px 16px", display: "flex", alignItems: "center",
-                    justifyContent: "space-between",
-                    background: "linear-gradient(to bottom, rgba(0,0,0,0.65), transparent)" }}>
-        {/* Contador de imagens */}
-        {type === "image" && images.length > 1 ? (
-          <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 600 }}>
-            {idx + 1} / {images.length}
-          </span>
-        ) : <span />}
-        {/* Botão X — sempre visível */}
-        <button
-          onClick={onClose}
-          style={{ ...btnBase, width: 44, height: 44, fontSize: 20,
-                   backgroundColor: "rgba(255,255,255,0.2)", border: "1.5px solid rgba(255,255,255,0.25)" }}
-        >
+      {/* ── Barra superior ────────────────────────────────────── */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, zIndex: 2,
+        padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+      }}>
+        <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 600 }}>
+          {slides.length > 1 ? `${idx + 1} / ${slides.length}` : ""}
+        </span>
+        <button onClick={onClose}
+          style={{ ...btnBase, width: 44, height: 44, backgroundColor: "rgba(255,255,255,0.2)",
+                   border: "1.5px solid rgba(255,255,255,0.25)" }}>
           <X className="w-6 h-6" />
         </button>
       </div>
 
-      {type === "embed" ? (
-        /* ── Modo embed 360° ─────────────────────────────────── */
+      {/* ── Slide atual ───────────────────────────────────────── */}
+      {isImage ? (
+        <div
+          style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
+                   justifyContent: "center", overflow: "hidden", touchAction: "none" }}
+          onWheel={onWheel}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <img
+            src={current.src}
+            alt={`Imagem ${idx + 1}`}
+            draggable={false}
+            onDoubleClick={onDblClick}
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxHeight: "85vh", maxWidth: "92vw", objectFit: "contain", userSelect: "none",
+              cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in",
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+              transition: isDragging ? "none" : "transform 0.12s ease",
+            }}
+          />
+        </div>
+      ) : (
+        /* Embed 360° — ocupa tela inteira, totalmente interativo */
         <iframe
-          srcDoc={embedHtml}
+          srcDoc={current.html}
           sandbox="allow-scripts allow-same-origin"
           scrolling="no"
           style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
         />
-      ) : (
-        /* ── Modo imagem com zoom ─────────────────────────────── */
+      )}
+
+      {/* ── Setas de navegação (ambos os tipos) ────────────────── */}
+      {slides.length > 1 && (
         <>
-          {/* Área da imagem */}
-          <div
-            style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
-                     justifyContent: "center", overflow: "hidden", touchAction: "none" }}
-            onWheel={onWheel}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-          >
-            <img
-              src={images[idx]}
-              alt={`Imagem ${idx + 1}`}
-              draggable={false}
-              onDoubleClick={onDblClick}
-              onClick={e => e.stopPropagation()}
-              style={{
-                maxHeight: "85vh", maxWidth: "92vw",
-                objectFit: "contain", userSelect: "none",
-                cursor: scale > 1 ? (isDragging ? "grabbing" : "grab") : "zoom-in",
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-                transition: isDragging ? "none" : "transform 0.12s ease",
-              }}
-            />
-          </div>
-
-          {/* Setas laterais */}
-          {images.length > 1 && (
-            <>
-              <button onClick={prev}
-                style={{ ...btnBase, position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
-                         width: 44, height: 44, zIndex: 2 }}>
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button onClick={next}
-                style={{ ...btnBase, position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                         width: 44, height: 44, zIndex: 2 }}>
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
-          )}
-
-          {/* Controles de zoom — acima do nav mobile (80px do fundo) */}
-          <div style={{ position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 2,
-                        display: "flex", alignItems: "center", gap: 12,
-                        backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
-                        borderRadius: 999, padding: "10px 20px" }}>
-            <button onClick={() => zoom(1 / 1.3)}
-              style={{ ...btnBase, width: 36, height: 36, backgroundColor: "transparent" }}>
-              <ZoomOut className="w-5 h-5" />
-            </button>
-            <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, minWidth: 48, textAlign: "center" }}>
-              {Math.round(scale * 100)}%
-            </span>
-            <button onClick={() => zoom(1.3)}
-              style={{ ...btnBase, width: 36, height: 36, backgroundColor: "transparent" }}>
-              <ZoomIn className="w-5 h-5" />
-            </button>
-          </div>
+          <button onClick={prev}
+            style={{ ...btnBase, position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                     width: 44, height: 44, zIndex: 2 }}>
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button onClick={next}
+            style={{ ...btnBase, position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                     width: 44, height: 44, zIndex: 2 }}>
+            <ChevronRight className="w-6 h-6" />
+          </button>
         </>
+      )}
+
+      {/* ── Zoom — apenas para fotos, acima do nav mobile (80px) ── */}
+      {isImage && (
+        <div style={{
+          position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 2,
+          display: "flex", alignItems: "center", gap: 12,
+          backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
+          borderRadius: 999, padding: "10px 20px",
+        }}>
+          <button onClick={() => zoom(1 / 1.3)} style={{ ...btnBase, width: 36, height: 36, backgroundColor: "transparent" }}>
+            <ZoomOut className="w-5 h-5" />
+          </button>
+          <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, minWidth: 48, textAlign: "center" }}>
+            {Math.round(scale * 100)}%
+          </span>
+          <button onClick={() => zoom(1.3)} style={{ ...btnBase, width: 36, height: 36, backgroundColor: "transparent" }}>
+            <ZoomIn className="w-5 h-5" />
+          </button>
+        </div>
       )}
     </div>,
     document.body

@@ -5,12 +5,12 @@ import '@/index.css'
 import { queryClientInstance } from '@/lib/query-client'
 import { base44 } from '@/api/base44Client'
 import { SETTINGS_SINGLETON_QUERY_KEY } from '@/lib/defaults'
+import { fetchVehiclesCatalog, VEHICLES_QUERY_KEY, FIVE_MIN } from '@/lib/vehicleQueries'
 
 // Dispara as queries críticas ANTES do React montar — dados chegam mais cedo
-const FIVE_MIN = 5 * 60 * 1000;
 queryClientInstance.prefetchQuery({
-  queryKey: ["vehicles"],
-  queryFn: () => base44.entities.Vehicle.list("-created_date", 200),
+  queryKey: VEHICLES_QUERY_KEY,
+  queryFn: fetchVehiclesCatalog,
   staleTime: FIVE_MIN,
 });
 queryClientInstance.prefetchQuery({

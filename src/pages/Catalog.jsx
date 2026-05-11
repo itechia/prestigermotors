@@ -1,7 +1,7 @@
 // Catalog page — public store front.
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { fetchVehiclesCatalog, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
 
 import HeroBanner from "../components/vehicles/HeroBanner";
 import EmptyState from "../components/vehicles/EmptyState";
@@ -24,8 +24,8 @@ export default function Catalog() {
   };
 
   const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: () => base44.entities.Vehicle.list("-created_date", 200),
+    queryKey: VEHICLES_QUERY_KEY,
+    queryFn: fetchVehiclesCatalog,
   });
 
   const filtered = useMemo(() => {
