@@ -28,6 +28,7 @@ export default function VehicleDetail() {
   const tax = useTaxonomies();
   const labels = buildResolvers(tax);
   const [activeImage, setActiveImage] = useState(0);
+  const [thumbOffset, setThumbOffset] = useState(0);
   const [interestOpen, setInterestOpen] = useState(false);
 
   // Always start at the top when opening a vehicle
@@ -113,6 +114,16 @@ export default function VehicleDetail() {
   const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
+  const THUMB_COLS = 5;
+  // Mantém a janela de thumbnails visível ao redor do slide ativo
+  useEffect(() => {
+    if (activeImage < thumbOffset) {
+      setThumbOffset(activeImage);
+    } else if (activeImage >= thumbOffset + THUMB_COLS) {
+      setThumbOffset(activeImage - THUMB_COLS + 1);
+    }
+  }, [activeImage, thumbOffset]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
       <button
@@ -184,40 +195,64 @@ export default function VehicleDetail() {
             )}
           </motion.div>
 
-          {/* Thumbnails — scroll horizontal, todas as fotos visíveis */}
+          {/* Thumbnails — grade fixa de 5 com botões de navegação */}
           {totalSlides > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {/* Slot 0: embed 360° */}
-              {hasEmbed && (
-                <button
-                  onClick={() => setActiveImage(0)}
-                  className={cn(
-                    "flex-shrink-0 w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                    activeImage === 0
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <RotateCw className="w-5 h-5" />
-                  <span className="text-[10px] font-bold tracking-wider">360°</span>
-                </button>
-              )}
-              {/* Todas as fotos sem limite */}
-              {images.map((img, i) => {
-                const slideIdx = hasEmbed ? i + 1 : i;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setActiveImage(slideIdx)}
-                    className={cn(
-                      "flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all",
-                      activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              {/* Seta esquerda */}
+              <button
+                onClick={() => setThumbOffset(o => Math.max(0, o - 1))}
+                disabled={thumbOffset === 0}
+                className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center transition-opacity disabled:opacity-20"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Grade fixa de 5 colunas */}
+              <div className="grid grid-cols-5 gap-2 flex-1">
+                {Array.from({ length: THUMB_COLS }).map((_, col) => {
+                  const slideIdx = thumbOffset + col;
+                  if (slideIdx >= totalSlides) {
+                    return <div key={col} className="aspect-square" />;
+                  }
+                  const isEmbed = hasEmbed && slideIdx === 0;
+                  const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
+                  return isEmbed ? (
+                    <button
+                      key="embed"
+                      onClick={() => setActiveImage(0)}
+                      className={cn(
+                        "aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
+                        activeImage === 0
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
+                      )}
+                    >
+                      <RotateCw className="w-4 h-4" />
+                      <span className="text-[9px] font-bold tracking-wider">360°</span>
+                    </button>
+                  ) : (
+                    <button
+                      key={imgIdx}
+                      onClick={() => setActiveImage(slideIdx)}
+                      className={cn(
+                        "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                        activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
+                      )}
+                    >
+                      <img src={images[imgIdx]} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Seta direita */}
+              <button
+                onClick={() => setThumbOffset(o => Math.min(totalSlides - THUMB_COLS, o + 1))}
+                disabled={thumbOffset + THUMB_COLS >= totalSlides}
+                className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center transition-opacity disabled:opacity-20"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           )}
         </div>
