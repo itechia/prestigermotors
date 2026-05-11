@@ -28,7 +28,6 @@ export default function VehicleDetail() {
   const tax = useTaxonomies();
   const labels = buildResolvers(tax);
   const [activeImage, setActiveImage] = useState(0);
-  const [showEmbed, setShowEmbed] = useState(false);
   const [interestOpen, setInterestOpen] = useState(false);
 
   // Always start at the top when opening a vehicle
@@ -107,8 +106,12 @@ export default function VehicleDetail() {
     }
   };
 
-  const nextImage = () => { setShowEmbed(false); setActiveImage(i => (i + 1) % images.length); };
-  const prevImage = () => { setShowEmbed(false); setActiveImage(i => (i - 1 + images.length) % images.length); };
+  // Slide 0 = embed (quando existe); slides 1..N = images[0..N-1]
+  const totalSlides = (hasEmbed ? 1 : 0) + images.length;
+  const showingEmbed = hasEmbed && activeImage === 0;
+  const imageIndex = hasEmbed ? activeImage - 1 : activeImage;
+  const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
+  const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -123,13 +126,14 @@ export default function VehicleDetail() {
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
           <motion.div
-            key={showEmbed ? "embed" : activeImage}
+            key={activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
             className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
           >
-            {showEmbed ? (
+            {showingEmbed ? (
               <iframe
+                key="embed"
                 srcDoc={vehicle.embed_html}
                 title={`${vehicle.brand} ${vehicle.model} 360°`}
                 sandbox="allow-scripts allow-same-origin"
@@ -137,7 +141,7 @@ export default function VehicleDetail() {
                 className="w-full h-full border-0 block"
               />
             ) : (
-              <img src={images[activeImage]} alt={vehicle.model} className="w-full h-full object-cover" />
+              <img src={images[imageIndex]} alt={vehicle.model} className="w-full h-full object-cover" />
             )}
 
             <div className="absolute top-4 left-4 flex gap-2">
@@ -162,7 +166,7 @@ export default function VehicleDetail() {
               </button>
             </div>
 
-            {images.length > 1 && !showEmbed && (
+            {totalSlides > 1 && (
               <>
                 <button
                   onClick={prevImage}
@@ -180,27 +184,16 @@ export default function VehicleDetail() {
             )}
           </motion.div>
 
-          {/* Thumbnails — scroll horizontal, sem limite de fotos */}
-          {(images.length > 1 || hasEmbed) && (
+          {/* Thumbnails — scroll horizontal, todas as fotos visíveis */}
+          {totalSlides > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setActiveImage(i); setShowEmbed(false); }}
-                  className={cn(
-                    "flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden border-2 transition-all",
-                    activeImage === i && !showEmbed ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
+              {/* Slot 0: embed 360° */}
               {hasEmbed && (
                 <button
-                  onClick={() => setShowEmbed(true)}
+                  onClick={() => setActiveImage(0)}
                   className={cn(
-                    "flex-shrink-0 w-[72px] h-[72px] rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                    showEmbed
+                    "flex-shrink-0 w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
+                    activeImage === 0
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
                   )}
@@ -209,6 +202,22 @@ export default function VehicleDetail() {
                   <span className="text-[10px] font-bold tracking-wider">360°</span>
                 </button>
               )}
+              {/* Todas as fotos sem limite */}
+              {images.map((img, i) => {
+                const slideIdx = hasEmbed ? i + 1 : i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImage(slideIdx)}
+                    className={cn(
+                      "flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all",
+                      activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
