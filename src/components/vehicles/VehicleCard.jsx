@@ -1,5 +1,6 @@
-import React, { useState, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Gauge, Calendar, Flame, MessageCircle, RotateCw } from "lucide-react";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
 import { useStoreSettings } from "@/lib/useStoreSettings";
@@ -8,7 +9,14 @@ import { buildWhatsAppHref } from "@/lib/whatsappMessage";
 
 function VehicleCard({ vehicle, index = 0 }) {
   const settings = useStoreSettings();
+  const queryClient = useQueryClient();
   const [interestOpen, setInterestOpen] = useState(false);
+
+  // Popula o cache da página de detalhe com os dados que já temos do catálogo.
+  // Assim, clicar no card abre a página de detalhe instantaneamente.
+  useEffect(() => {
+    queryClient.setQueryData(["vehicle", vehicle.id], vehicle);
+  }, [vehicle.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasEmbed  = Boolean(vehicle.embed_html?.trim());
   const mainImage = vehicle.images?.[0] || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80";

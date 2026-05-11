@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
@@ -19,8 +19,10 @@ import AdminLogin from './pages/AdminLogin';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth } = useAuth();
+  const location = useLocation();
 
-  if (isLoadingAuth) {
+  // Páginas públicas não precisam esperar a verificação de auth — só bloqueia /admin
+  if (isLoadingAuth && location.pathname.startsWith('/admin')) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-secondary border-t-primary rounded-full animate-spin"></div>

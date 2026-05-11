@@ -2,13 +2,30 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
+import { queryClientInstance } from '@/lib/query-client'
+import { base44 } from '@/api/base44Client'
+import { SETTINGS_SINGLETON_QUERY_KEY } from '@/lib/defaults'
+
+// Dispara as queries críticas ANTES do React montar — dados chegam mais cedo
+const FIVE_MIN = 5 * 60 * 1000;
+queryClientInstance.prefetchQuery({
+  queryKey: ["vehicles"],
+  queryFn: () => base44.entities.Vehicle.list("-created_date", 200),
+  staleTime: FIVE_MIN,
+});
+queryClientInstance.prefetchQuery({
+  queryKey: SETTINGS_SINGLETON_QUERY_KEY,
+  queryFn: async () => {
+    const list = await base44.entities.StoreSettings.list("-updated_date", 1);
+    return list[0] || null;
+  },
+  staleTime: FIVE_MIN,
+});
 
 // Registra o Service Worker para PWA instalável (somente em produção / https)
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // silencia erros em ambientes que não suportam
-    });
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
 }
 

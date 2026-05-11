@@ -11,7 +11,7 @@ export function useStoreSettings() {
       const list = await base44.entities.StoreSettings.list("-updated_date", 1);
       return list[0] || null;
     },
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000,
   });
   return withDefaults(data);
 }
@@ -24,7 +24,7 @@ export function useStoreSettingsRaw() {
       const list = await base44.entities.StoreSettings.list("-updated_date", 1);
       return list[0] || null;
     },
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
