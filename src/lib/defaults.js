@@ -82,10 +82,16 @@ export const DEFAULT_SETTINGS = {
   sell_webhook_secret: "",
 };
 
-// Merge admin-provided settings with defaults for every field.
+// Merge admin-provided settings with defaults.
+// Cache por referência: evita criar novo objeto a cada renderização.
+let _lastInput = null;
+let _lastOutput = null;
 export function withDefaults(settings) {
   if (!settings) return DEFAULT_SETTINGS;
-  return { ...DEFAULT_SETTINGS, ...settings };
+  if (settings === _lastInput) return _lastOutput;
+  _lastInput  = settings;
+  _lastOutput = { ...DEFAULT_SETTINGS, ...settings };
+  return _lastOutput;
 }
 
 export const SETTINGS_SINGLETON_QUERY_KEY = ["store-settings"];

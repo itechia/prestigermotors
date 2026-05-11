@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { Link } from "react-router-dom";
 import { Gauge, Calendar, Flame, MessageCircle, RotateCw } from "lucide-react";
-import { motion } from "framer-motion";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import InterestFormDialog from "@/components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
 
-export default function VehicleCard({ vehicle, index = 0 }) {
+function VehicleCard({ vehicle, index = 0 }) {
   const settings = useStoreSettings();
   const [interestOpen, setInterestOpen] = useState(false);
 
@@ -31,11 +30,7 @@ export default function VehicleCard({ vehicle, index = 0 }) {
   const detailHref = `/veiculo/${vehicle.id}`;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.3) }}
-    >
+    <div className="card-fade-in" style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}>
       <div className="group flex flex-col h-full bg-card rounded-3xl overflow-hidden border border-border/50 hover:border-border hover:shadow-xl transition-all duration-300">
 
         {/* ── Área de imagem ───────────────────────────── */}
@@ -49,10 +44,8 @@ export default function VehicleCard({ vehicle, index = 0 }) {
             />
           </Link>
 
-          {/* Gradient overlay */}
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
 
-          {/* Badges superiores */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start pointer-events-none">
             {hasDiscount && vehicle.status !== "vendido" && (
               <span className="px-2.5 py-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold uppercase tracking-wider shadow-sm">
@@ -76,7 +69,6 @@ export default function VehicleCard({ vehicle, index = 0 }) {
             )}
           </div>
 
-          {/* Badge 360° quando há embed */}
           {hasEmbed && (
             <div className="absolute bottom-3 left-3 pointer-events-none">
               <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
@@ -86,7 +78,6 @@ export default function VehicleCard({ vehicle, index = 0 }) {
           )}
         </div>
 
-        {/* ── Área de conteúdo — clicável para navegar ── */}
         <Link to={detailHref} className="p-4 space-y-3 flex flex-col flex-1">
           <div>
             <h3 className="font-display font-bold text-base leading-tight truncate">
@@ -139,6 +130,8 @@ export default function VehicleCard({ vehicle, index = 0 }) {
         onOpenChange={setInterestOpen}
         vehicle={vehicle}
       />
-    </motion.div>
+    </div>
   );
 }
+
+export default memo(VehicleCard);

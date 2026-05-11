@@ -25,7 +25,7 @@ export default function Catalog() {
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ["vehicles"],
-    queryFn: () => base44.entities.Vehicle.list("-created_date", 100),
+    queryFn: () => base44.entities.Vehicle.list("-created_date", 200),
   });
 
   const filtered = useMemo(() => {
