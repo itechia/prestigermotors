@@ -151,31 +151,36 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
   }, [filters]);
 
   return (
-    <div className="grid gap-2" style={{ gridTemplateColumns: "1fr 48px" }}>
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por marca ou modelo..."
-          className="pl-11 h-12 rounded-full bg-secondary border-0 focus-visible:ring-2 w-full"
-        />
+    <>
+      {/* Linha busca + botão filtro — grid garante 48px fixos pro botão */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1" style={{ minWidth: 0 }}>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por marca ou modelo..."
+            className="pl-11 h-12 rounded-full bg-secondary border-0 focus-visible:ring-2"
+            style={{ width: "100%" }}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={{ width: 48, minWidth: 48, height: 48 }}
+          className="rounded-full border border-border bg-background flex items-center justify-center relative flex-shrink-0"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          {activeCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+              {activeCount}
+            </span>
+          )}
+        </button>
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            className="h-12 w-12 rounded-full border-border relative flex items-center justify-center p-0"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            {activeCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                {activeCount}
-              </span>
-            )}
-          </Button>
-        </SheetTrigger>
         <SheetContent
           side={isMobile ? "bottom" : "right"}
           className={isMobile
@@ -318,7 +323,7 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }
 

@@ -82,7 +82,7 @@ export default function BrandPills({ selected = [], onToggle, onClear }) {
       <div
         ref={scrollerRef}
         className={cn(
-          "flex gap-2 sm:gap-3 md:gap-5 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 py-1",
+          "flex gap-2 sm:gap-3 md:gap-5 overflow-x-auto scrollbar-hide py-1",
           overflowing ? "justify-start" : "justify-start md:justify-center",
           overflowing && "md:px-12"
         )}

@@ -77,60 +77,67 @@ export default function Catalog() {
   const regular = filtered.filter((v) => !v.featured);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-4 pb-0 space-y-3 md:space-y-4">
-      <HeroBanner />
-
-      <div className="space-y-3 sticky top-16 z-30 bg-background/80 backdrop-blur-md pt-3 md:pt-4 pb-3 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <VehicleFilters
-          filters={filters}
-          setFilters={setFilters}
-          search={search}
-          setSearch={setSearch}
-          selectedBrands={selectedBrands}
-          vehicles={vehicles}
-        />
-        <BrandPills
-          selected={selectedBrands}
-          onToggle={toggleBrand}
-          onClear={() => setSelectedBrands([])}
-        />
+    <div>
+      {/* Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-4">
+        <HeroBanner />
       </div>
 
-      <div className="space-y-8 pt-2">
-      {isLoading ? (
-        <LoadingGrid />
-      ) : filtered.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <>
-          {featured.length > 0 && (
-            <section>
-              <SectionHeader title="Em destaque" subtitle="Seleção especial da nossa loja" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {featured.map((v, i) => (
-                  <VehicleCard key={v.id} vehicle={v} index={i} />
-                ))}
-              </div>
-            </section>
-          )}
+      {/* Sticky search + brands — sem margem negativa */}
+      <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-md border-b border-border/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
+          <VehicleFilters
+            filters={filters}
+            setFilters={setFilters}
+            search={search}
+            setSearch={setSearch}
+            selectedBrands={selectedBrands}
+            vehicles={vehicles}
+          />
+          <BrandPills
+            selected={selectedBrands}
+            onToggle={toggleBrand}
+            onClear={() => setSelectedBrands([])}
+          />
+        </div>
+      </div>
 
-          {regular.length > 0 && (
-            <section>
-              <SectionHeader
-                title="Todos os veículos"
-                subtitle={`${filtered.length} opção${filtered.length > 1 ? "es" : ""} pronta${filtered.length > 1 ? "s" : ""} para entrega`}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {regular.map((v, i) => (
-                  <VehicleCard key={v.id} vehicle={v} index={i} />
-                ))}
-              </div>
-            </section>
-          )}
+      {/* Vehicle grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-4 pb-0">
+        {isLoading ? (
+          <LoadingGrid />
+        ) : filtered.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <>
+            {featured.length > 0 && (
+              <section>
+                <SectionHeader title="Em destaque" subtitle="Seleção especial da nossa loja" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                  {featured.map((v, i) => (
+                    <VehicleCard key={v.id} vehicle={v} index={i} />
+                  ))}
+                </div>
+              </section>
+            )}
 
-          <Reviews />
-        </>
-      )}
+            {regular.length > 0 && (
+              <section>
+                <SectionHeader
+                  title="Todos os veículos"
+                  subtitle={`${filtered.length} opção${filtered.length > 1 ? "es" : ""} pronta${filtered.length > 1 ? "s" : ""} para entrega`}
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                  {regular.map((v, i) => (
+                    <VehicleCard key={v.id} vehicle={v} index={i} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <Reviews />
+          </>
+        )}
       </div>
     </div>
   );
