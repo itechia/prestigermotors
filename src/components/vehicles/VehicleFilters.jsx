@@ -151,22 +151,24 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
   }, [filters]);
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex-1 min-w-0">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+    <div className="grid gap-2" style={{ gridTemplateColumns: "1fr 48px" }}>
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por marca ou modelo..."
-          className="pl-11 h-12 rounded-full bg-secondary border-0 focus-visible:ring-2"
+          className="pl-11 h-12 rounded-full bg-secondary border-0 focus-visible:ring-2 w-full"
         />
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="outline" className="h-12 w-12 md:w-auto md:px-5 rounded-full flex-shrink-0 relative border-border">
+          <Button
+            variant="outline"
+            className="h-12 w-12 rounded-full border-border relative flex items-center justify-center p-0"
+          >
             <SlidersHorizontal className="w-4 h-4" />
-            <span className="hidden md:inline md:ml-2">Filtros</span>
             {activeCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
                 {activeCount}

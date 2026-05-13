@@ -106,7 +106,7 @@ export default function Catalog() {
           {featured.length > 0 && (
             <section>
               <SectionHeader title="Em destaque" subtitle="Seleção especial da nossa loja" />
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {featured.map((v, i) => (
                   <VehicleCard key={v.id} vehicle={v} index={i} />
                 ))}
@@ -120,7 +120,7 @@ export default function Catalog() {
                 title="Todos os veículos"
                 subtitle={`${filtered.length} opção${filtered.length > 1 ? "es" : ""} pronta${filtered.length > 1 ? "s" : ""} para entrega`}
               />
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {regular.map((v, i) => (
                   <VehicleCard key={v.id} vehicle={v} index={i} />
                 ))}
@@ -149,7 +149,7 @@ function SectionHeader({ title, subtitle }) {
 
 function LoadingGrid() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
       {Array(8).fill(0).map((_, i) => (
         <div key={i} className="bg-card rounded-3xl overflow-hidden border border-border/50 animate-pulse">
           <div className="aspect-[4/3] bg-secondary" />
