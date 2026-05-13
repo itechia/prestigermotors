@@ -54,19 +54,18 @@ export default function HeroBanner() {
   const desktopImg = current.image_desktop || current.image_mobile;
   const mobileImg = current.image_mobile || current.image_desktop;
 
-  // Fixed-height containers prevent layout shift while images load (CLS fix).
   const Inner = (
     <>
+      {/* Mobile: natural height, max 224px — same as original to avoid cropping */}
       {mobileImg && (
-        <div className="block md:hidden w-full h-44 bg-secondary">
-          <img
-            src={mobileImg}
-            alt=""
-            className="w-full h-full object-cover"
-            loading="eager"
-          />
-        </div>
+        <img
+          src={mobileImg}
+          alt=""
+          className="block md:hidden w-full h-auto max-h-56 object-cover"
+          loading="eager"
+        />
       )}
+      {/* Desktop: fixed height prevents layout shift */}
       {desktopImg && (
         <div className="hidden md:block w-full h-56 lg:h-64 bg-secondary">
           <img

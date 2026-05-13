@@ -73,7 +73,7 @@ export default function PriceRangeSlider({ min, max, onChange, vehicles = [] }) 
             onBlur={commitLo}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             inputMode="numeric"
-            className="h-9 text-sm"
+            className="h-9"
           />
         </div>
         <div>
@@ -86,7 +86,7 @@ export default function PriceRangeSlider({ min, max, onChange, vehicles = [] }) 
             onBlur={commitHi}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             inputMode="numeric"
-            className="h-9 text-sm text-right"
+            className="h-9 text-right"
           />
         </div>
       </div>

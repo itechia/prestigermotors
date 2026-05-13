@@ -63,7 +63,10 @@ export default function AdminShell({ children, title, subtitle, actions }) {
           )}
         >
           {/* Sidebar */}
-          <aside className="lg:sticky lg:top-20 lg:self-start">
+          <aside className={cn(
+            "lg:sticky lg:top-20 lg:self-start min-w-0 overflow-hidden",
+            collapsed ? "lg:w-16" : "lg:w-60"
+          )}>
             <div className={cn("mb-4 hidden lg:flex items-center justify-between gap-2", collapsed && "justify-center")}>
               {!collapsed && (
                 <div className="min-w-0">
