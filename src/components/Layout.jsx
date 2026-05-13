@@ -38,7 +38,7 @@ export default function Layout() {
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden w-full">
+    <div className="min-h-screen bg-background flex flex-col">
       <BrandHead />
       {/* Top Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50 pt-safe">
