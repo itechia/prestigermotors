@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Loader2, X, ImageIcon } from "lucide-react";
-import { uploadFile } from "@/lib/uploadFile";
+import { uploadFile, deleteStorageFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -17,21 +17,35 @@ export default function LogoUploadField({
   size = 64, // px
   previewBg = "bg-secondary",
   showUrlInput = true,
+  maxBytes = 5_242_880, // 5 MB default
 }) {
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > maxBytes) {
+      const kb = Math.round(maxBytes / 1024);
+      const limit = maxBytes >= 1_048_576 ? `${(maxBytes / 1_048_576).toFixed(0)} MB` : `${kb} KB`;
+      toast.error(`Arquivo muito grande. Máximo: ${limit}.`);
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
-      const { file_url } = await uploadFile({ file });
+      const { file_url } = await uploadFile({ file, maxBytes });
       onChange(file_url);
-    } catch {
-      toast.error("Erro no upload");
+    } catch (err) {
+      toast.error(err?.message || "Erro no upload");
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
+  };
+
+  const handleClear = () => {
+    deleteStorageFile(value); // fire-and-forget
+    onChange("");
   };
 
   const radiusClass = shape === "circle" ? "rounded-full" : "rounded-xl";
@@ -55,7 +69,7 @@ export default function LogoUploadField({
               <img src={value} alt="" className="w-full h-full object-contain p-2" />
               <button
                 type="button"
-                onClick={() => onChange("")}
+                onClick={handleClear}
                 className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow"
                 aria-label="Remover"
               >

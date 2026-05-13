@@ -4,6 +4,9 @@ import ImageUploadField from "../ImageUploadField";
 import ArrayFieldEditor from "../ArrayFieldEditor";
 import { Monitor, Smartphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { deleteStorageFile } from "@/lib/uploadFile";
+
+const BANNER_MAX_BYTES = 5_242_880; // 5 MB
 
 function BannerPreview({ slides }) {
   const [idx, setIdx] = useState(0);
@@ -139,6 +142,10 @@ export default function SettingsHero({ form, update }) {
         newItem={() => ({ image_desktop: "", image_mobile: "", link: "" })}
         addLabel="Adicionar slide"
         itemLabel="Slide"
+        onRemove={(slide) => {
+          deleteStorageFile(slide.image_desktop);
+          deleteStorageFile(slide.image_mobile);
+        }}
         renderItem={(item, onItemChange) => (
           <div className="space-y-4">
             <ImageUploadField
@@ -146,14 +153,16 @@ export default function SettingsHero({ form, update }) {
               value={item.image_desktop}
               onChange={(v) => onItemChange({ ...item, image_desktop: v })}
               aspectClass="aspect-[5/1]"
-              hint="Tamanho ideal: 1600 × 320 px (proporção 5:1, JPG ou PNG, até 500 KB)"
+              maxBytes={BANNER_MAX_BYTES}
+              hint="Tamanho ideal: 1600 × 320 px (proporção 5:1, JPG, PNG ou GIF, máximo 5 MB)"
             />
             <ImageUploadField
               label="Imagem Mobile (opcional)"
               value={item.image_mobile}
               onChange={(v) => onItemChange({ ...item, image_mobile: v })}
               aspectClass="aspect-[3/1]"
-              hint="Tamanho ideal: 900 × 300 px (proporção 3:1). Se vazio, usa a imagem desktop."
+              maxBytes={BANNER_MAX_BYTES}
+              hint="Tamanho ideal: 900 × 300 px (proporção 3:1, JPG, PNG ou GIF, máximo 5 MB). Se vazio, usa a imagem desktop."
             />
             <TextField
               label="Link ao clicar (opcional)"

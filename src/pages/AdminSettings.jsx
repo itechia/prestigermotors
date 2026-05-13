@@ -6,6 +6,7 @@ import { Save, Store, Sparkles, ShieldCheck, MessageCircleHeart, Tag, PanelBotto
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useStoreSettingsRaw } from "@/lib/useStoreSettings";
+import { useSearchParams } from "react-router-dom";
 import { DEFAULT_SETTINGS, SETTINGS_SINGLETON_QUERY_KEY } from "@/lib/defaults";
 import AdminShell from "../components/admin/AdminShell";
 import SettingsGeneral from "../components/admin/settings/SettingsGeneral";
@@ -33,7 +34,9 @@ const TABS = [
 export default function AdminSettings() {
   const { data: record, isLoading } = useStoreSettingsRaw();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState("general");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") || "general";
+  const setTab = (id) => setSearchParams({ tab: id }, { replace: true });
   const [form, setForm] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
@@ -78,12 +81,12 @@ export default function AdminSettings() {
           className="rounded-full h-10 px-5 font-semibold"
         >
           <Save className="w-4 h-4 mr-2" />
-          {save.isPending ? "Salvando..." : "Salvar alterações"}
+          {save.isPending ? "Salvando…" : "Salvar alterações"}
         </Button>
       }
     >
       {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto scrollbar-hide mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 border-b border-border">
+      <div className="flex gap-1 overflow-x-auto scrollbar-hide mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 border-b border-border" role="tablist">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -91,14 +94,16 @@ export default function AdminSettings() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
+              role="tab"
+              aria-selected={active}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-light whitespace-nowrap transition-colors relative",
+                "flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-[13px] font-medium whitespace-nowrap transition-colors relative",
                 active
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4" aria-hidden="true" />
               {t.label}
               {active && <span className="absolute bottom-[-1px] left-2 right-2 h-0.5 bg-primary rounded-full" />}
             </button>
@@ -135,7 +140,7 @@ export default function AdminSettings() {
           size="lg"
         >
           <Save className="w-4 h-4 mr-2" />
-          {save.isPending ? "Salvando..." : "Salvar"}
+          {save.isPending ? "Salvando…" : "Salvar"}
         </Button>
       </div>
     </AdminShell>

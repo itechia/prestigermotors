@@ -89,12 +89,12 @@ export default function AdminDashboard() {
         <div className="p-5 border-b border-border/50 flex items-center justify-between">
           <h2 className="font-display font-bold text-lg">Últimos veículos cadastrados</h2>
           <Link to="/admin/veiculos" className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1">
-            Ver todos <ArrowRight className="w-3 h-3" />
+            Ver todos <ArrowRight className="w-3 h-3" aria-hidden="true" />
           </Link>
         </div>
 
         {isLoading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
+          <div className="p-8 text-center text-muted-foreground text-sm">Carregando…</div>
         ) : recent.length === 0 ? (
           <div className="p-12 text-center">
             <Car className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
@@ -118,6 +118,9 @@ export default function AdminDashboard() {
                   <img
                     src={v.images?.[0] || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=200"}
                     alt=""
+                    width={64}
+                    height={64}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -149,7 +152,7 @@ function StatCard({ icon: Icon, label, value, loading, small, accent }) {
   return (
     <div className="bg-card rounded-2xl p-4 md:p-5 border border-border/50">
       <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center mb-3`}>
-        <Icon className="w-4 h-4" />
+        <Icon className="w-4 h-4" aria-hidden="true" />
       </div>
       <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
       <div className={`font-display font-bold mt-0.5 ${small ? "text-base" : "text-2xl"}`}>
@@ -166,7 +169,7 @@ function QuickAction({ to, icon: Icon, title, desc, badge }) {
       className="group bg-card rounded-2xl p-5 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all flex items-center gap-4 relative"
     >
       <div className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center relative">
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5" aria-hidden="true" />
         {badge > 0 && (
           <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
             {badge}
@@ -177,7 +180,7 @@ function QuickAction({ to, icon: Icon, title, desc, badge }) {
         <div className="font-semibold">{title}</div>
         <div className="text-xs text-muted-foreground truncate">{desc}</div>
       </div>
-      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
     </Link>
   );
 }

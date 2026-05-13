@@ -7,14 +7,18 @@ import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 //  - onChange: (newItems) => void
 //  - newItem: () => object (factory for a blank item)
 //  - renderItem: (item, onItemChange) => JSX
+//  - onRemove: (item) => void — optional, called before removing an item (e.g. storage cleanup)
 //  - addLabel, itemLabel
-export default function ArrayFieldEditor({ items = [], onChange, newItem, renderItem, addLabel = "Adicionar", itemLabel = "Item" }) {
+export default function ArrayFieldEditor({ items = [], onChange, newItem, renderItem, onRemove, addLabel = "Adicionar", itemLabel = "Item" }) {
   const update = (idx, next) => {
     const copy = [...items];
     copy[idx] = next;
     onChange(copy);
   };
-  const remove = (idx) => onChange(items.filter((_, i) => i !== idx));
+  const remove = (idx) => {
+    onRemove?.(items[idx]);
+    onChange(items.filter((_, i) => i !== idx));
+  };
   const add = () => onChange([...items, newItem()]);
   const move = (idx, dir) => {
     const target = idx + dir;

@@ -2,24 +2,37 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Loader2, X } from "lucide-react";
-import { uploadFile } from "@/lib/uploadFile";
+import { uploadFile, deleteStorageFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 
-export default function ImageUploadField({ label, value, onChange, hint, aspectClass = "aspect-video" }) {
+export default function ImageUploadField({ label, value, onChange, hint, aspectClass = "aspect-video", maxBytes }) {
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (maxBytes && file.size > maxBytes) {
+      const kb = Math.round(maxBytes / 1024);
+      const label = maxBytes >= 1_048_576 ? `${(maxBytes / 1_048_576).toFixed(0)} MB` : `${kb} KB`;
+      toast.error(`Arquivo muito grande. Máximo: ${label}.`);
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
-      const { file_url } = await uploadFile({ file });
+      const { file_url } = await uploadFile({ file, maxBytes });
       onChange(file_url);
-    } catch {
-      toast.error("Erro no upload");
+    } catch (err) {
+      toast.error(err?.message || "Erro no upload");
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
+  };
+
+  const handleClear = () => {
+    deleteStorageFile(value); // fire-and-forget; silent if external URL
+    onChange("");
   };
 
   return (
@@ -31,7 +44,7 @@ export default function ImageUploadField({ label, value, onChange, hint, aspectC
           <img src={value} alt="" className="w-full h-full object-cover" />
           <button
             type="button"
-            onClick={() => onChange("")}
+            onClick={handleClear}
             className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
           >
             <X className="w-4 h-4" />

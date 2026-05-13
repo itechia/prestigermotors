@@ -180,12 +180,11 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
-          side={isMobile ? "bottom" : "right"}
+          side="right"
           className={isMobile
-            ? "w-full max-h-[88vh] rounded-t-2xl overflow-y-auto p-5"
+            ? "w-full max-w-full h-full overflow-y-auto p-5"
             : "w-full sm:max-w-md overflow-y-auto p-5"
           }
-          style={isMobile ? { maxHeight: "88dvh" } : undefined}
         >
           <SheetHeader className="pb-3">
             <SheetTitle className="font-display text-xl">Filtros</SheetTitle>

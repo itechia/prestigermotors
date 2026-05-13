@@ -44,16 +44,17 @@ export default function AdminVehicles() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por marca, modelo ou versão..."
+            placeholder="Buscar por marca, modelo ou versão…"
+            aria-label="Buscar veículos"
             className="pl-11 h-11 rounded-full bg-secondary border-0"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48 h-11 rounded-full">
+          <SelectTrigger className="w-full sm:w-48 h-11 rounded-full" aria-label="Filtrar por status">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -68,7 +69,7 @@ export default function AdminVehicles() {
       {/* List */}
       <div className="bg-card rounded-3xl border border-border/50 overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
+          <div className="p-8 text-center text-muted-foreground text-sm">Carregando…</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <Car className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
@@ -100,6 +101,9 @@ export default function AdminVehicles() {
                   <img
                     src={v.images?.[0] || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=200"}
                     alt=""
+                    width={64}
+                    height={64}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -108,7 +112,7 @@ export default function AdminVehicles() {
                     <h3 className="font-semibold truncate">{v.brand} {v.model}</h3>
                     {v.featured && (
                       <span className="px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-[9px] font-bold uppercase flex items-center gap-1">
-                        <Flame className="w-2.5 h-2.5" /> Destaque
+                        <Flame className="w-2.5 h-2.5" aria-hidden="true" /> Destaque
                       </span>
                     )}
                   </div>

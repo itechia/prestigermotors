@@ -46,7 +46,8 @@ export default function SettingsGeneral({ form, update }) {
           onChange={(v) => update("logo_url", v)}
           shape="square"
           size={72}
-          hint="Tamanho recomendado: 512 × 512 px (quadrado, PNG transparente, até 200 KB). Aparece no canto superior esquerdo do site, no favicon e no ícone do app."
+          maxBytes={5242880}
+          hint="Tamanho recomendado: 512 × 512 px (quadrado, PNG transparente, máximo 5 MB). Aparece no canto superior esquerdo do site, no favicon e no ícone do app."
         />
       </SettingsSection>
 

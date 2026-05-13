@@ -51,6 +51,8 @@ export default function AdminSellLeads() {
       if (error) throw error;
       return data ?? [];
     },
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const filtered = useMemo(() => {
@@ -87,6 +89,7 @@ export default function AdminSellLeads() {
       if (selected && result) setSelected({ ...selected, ...result });
       toast.success("Proposta atualizada");
     },
+    onError: () => toast.error("Erro ao atualizar proposta"),
   });
 
   const removeMut = useMutation({
@@ -107,7 +110,7 @@ export default function AdminSellLeads() {
       subtitle="Pessoas que querem vender o carro delas para a loja."
     >
       {/* Stat strip */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 mb-5">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2.5 mb-5">
         <StatusChip label="Todas" count={counts.all} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
         {Object.entries(STATUS_LABELS).map(([key, label]) => (
           <StatusChip
@@ -123,11 +126,12 @@ export default function AdminSellLeads() {
 
       {/* Search */}
       <div className="relative mb-4">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nome, telefone, marca ou modelo..."
+          placeholder="Buscar por nome, telefone, marca ou modelo…"
+          aria-label="Buscar propostas"
           className="pl-11 h-11 rounded-full bg-secondary border-0"
         />
       </div>
@@ -157,10 +161,10 @@ export default function AdminSellLeads() {
             >
               <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden bg-secondary flex-shrink-0">
                 {lead.images?.[0] ? (
-                  <img src={lead.images[0]} alt="" className="w-full h-full object-cover" />
+                  <img src={lead.images[0]} alt="" width={56} height={56} loading="lazy" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Car className="w-6 h-6 text-muted-foreground" />
+                    <Car className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
                   </div>
                 )}
               </div>
@@ -189,7 +193,7 @@ export default function AdminSellLeads() {
                 )}
                 <div className="text-[10px] text-muted-foreground">Pedido</div>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             </button>
           ))}
         </div>
@@ -313,7 +317,7 @@ function LeadDetailDialog({ lead, onClose, onUpdate, onRemove }) {
                     rel="noreferrer"
                     className="aspect-square rounded-xl overflow-hidden bg-secondary"
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform" />
+                    <img src={img} alt="" width={200} height={200} loading="lazy" className="w-full h-full object-cover hover:scale-105 transition-transform motion-reduce:hover:scale-100" />
                   </a>
                 ))}
               </div>

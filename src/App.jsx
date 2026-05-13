@@ -77,15 +77,18 @@ const AuthenticatedApp = () => {
         </Suspense>
       } />
 
+      {/* Admin routes — standalone layout (AdminShell), NO public navbar */}
+      <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
+      <Route path="/admin/veiculos" element={<Suspense fallback={<PageLoader />}><AdminVehicles /></Suspense>} />
+      <Route path="/admin/propostas" element={<Suspense fallback={<PageLoader />}><AdminSellLeads /></Suspense>} />
+      <Route path="/admin/configuracoes" element={<Suspense fallback={<PageLoader />}><AdminSettings /></Suspense>} />
+      <Route path="/admin/veiculo/:id" element={<Suspense fallback={<PageLoader />}><AdminVehicleEditor /></Suspense>} />
+
+      {/* Public routes — use public Layout with header/footer */}
       <Route element={<Layout />}>
         <Route path="/" element={<Suspense fallback={<PageLoader />}><Catalog /></Suspense>} />
         <Route path="/veiculo/:id" element={<Suspense fallback={<PageLoader />}><VehicleDetail /></Suspense>} />
         <Route path="/vender" element={<Suspense fallback={<PageLoader />}><SellMyVehicle /></Suspense>} />
-        <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
-        <Route path="/admin/veiculos" element={<Suspense fallback={<PageLoader />}><AdminVehicles /></Suspense>} />
-        <Route path="/admin/propostas" element={<Suspense fallback={<PageLoader />}><AdminSellLeads /></Suspense>} />
-        <Route path="/admin/configuracoes" element={<Suspense fallback={<PageLoader />}><AdminSettings /></Suspense>} />
-        <Route path="/admin/veiculo/:id" element={<Suspense fallback={<PageLoader />}><AdminVehicleEditor /></Suspense>} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

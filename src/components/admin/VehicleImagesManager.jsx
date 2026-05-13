@@ -6,31 +6,45 @@ import {
 } from "@hello-pangea/dnd";
 import { Upload, Loader2, X, Star, GripVertical, ArrowUpToLine, Info } from "lucide-react";
 import { toast } from "sonner";
-import { uploadFile } from "@/lib/uploadFile";
+import { uploadFile, deleteStorageFile } from "@/lib/uploadFile";
+
+const MAX_BYTES = 5_242_880; // 5 MB por imagem
 
 export default function VehicleImagesManager({ images = [], onChange, hasEmbed = false }) {
   const [uploading, setUploading] = useState(false);
 
   const handleFiles = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+    const all = Array.from(e.target.files || []);
+    if (all.length === 0) return;
+
+    const oversized = all.filter((f) => f.size > MAX_BYTES);
+    const valid = all.filter((f) => f.size <= MAX_BYTES);
+
+    if (oversized.length > 0) {
+      toast.warning(
+        `${oversized.length} arquivo(s) ignorado(s) por exceder 1 MB: ${oversized.map((f) => f.name).join(", ")}`
+      );
+    }
+    if (valid.length === 0) return;
+
     setUploading(true);
     try {
-      const uploads = await Promise.all(
-        files.map((file) => uploadFile({ file }))
-      );
+      const uploads = await Promise.all(valid.map((file) => uploadFile({ file, maxBytes: MAX_BYTES })));
       const urls = uploads.map((u) => u.file_url);
       onChange([...(images || []), ...urls]);
       toast.success(`${urls.length} imagem(ns) enviada(s)`);
-    } catch {
-      toast.error("Erro no upload");
+    } catch (err) {
+      toast.error(err?.message || "Erro no upload");
     } finally {
       setUploading(false);
       e.target.value = "";
     }
   };
 
-  const removeImage = (idx) => onChange(images.filter((_, i) => i !== idx));
+  const removeImage = (idx) => {
+    deleteStorageFile(images[idx]); // fire-and-forget
+    onChange(images.filter((_, i) => i !== idx));
+  };
 
   const setAsCover = (idx) => {
     if (idx === 0) return;
@@ -158,7 +172,7 @@ export default function VehicleImagesManager({ images = [], onChange, hasEmbed =
         <p className="text-[11px] text-muted-foreground">
           {hasEmbed
             ? "Arraste para reordenar as fotos. Elas aparecem após o slide 360°."
-            : "Arraste para reordenar. A primeira é a capa exibida no catálogo."}
+            : "Arraste para reordenar. A primeira é a capa exibida no catálogo. Máximo 5 MB por imagem."}
         </p>
       )}
     </div>

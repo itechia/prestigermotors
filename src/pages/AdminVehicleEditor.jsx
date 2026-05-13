@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import VehicleImagesManager from "../components/admin/VehicleImagesManager";
 import VehicleLivePreview from "../components/admin/VehicleLivePreview";
 import { statusLabels } from "@/lib/formatters";
 import { useTaxonomies, slugify } from "@/lib/useTaxonomies";
+import { deleteStorageFile } from "@/lib/uploadFile";
 
 export default function AdminVehicleEditor() {
   return (
@@ -45,7 +46,7 @@ function Editor() {
   const [form, setForm] = useState(INITIAL);
   const [featureInput, setFeatureInput] = useState("");
 
-  const { data: vehicle } = useQuery({
+  const { data: vehicle, isLoading: vehicleLoading } = useQuery({
     queryKey: ["vehicle", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,13 +63,6 @@ function Editor() {
   useEffect(() => {
     if (vehicle) setForm({ ...INITIAL, ...vehicle });
   }, [vehicle]);
-
-  const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-
-  // When the brand changes, clear the model since the available list will change
-  const onBrandChange = (brandName) => {
-    setForm((f) => ({ ...f, brand: brandName, model: "" }));
-  };
 
   // Models filtered by selected brand (matches the brand slug stored as parent)
   const availableModels = useMemo(() => {
@@ -110,6 +104,10 @@ function Editor() {
     mutationFn: async () => {
       const { error } = await supabase.from("vehicles").delete().eq("id", id);
       if (error) throw error;
+      // After DB record is removed, clean up all uploaded images from storage
+      if (form.images?.length) {
+        await Promise.allSettled(form.images.map((url) => deleteStorageFile(url)));
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
@@ -118,6 +116,17 @@ function Editor() {
       navigate("/admin/veiculos");
     },
   });
+
+  // All hooks declared — safe to conditionally render now
+  if (!isNew && vehicleLoading) {
+    return <EditorSkeleton />;
+  }
+
+  const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+
+  const onBrandChange = (brandName) => {
+    setForm((f) => ({ ...f, brand: brandName, model: "" }));
+  };
 
   const addFeature = () => {
     if (!featureInput.trim()) return;
@@ -131,12 +140,12 @@ function Editor() {
 
   return (
     <div className="pb-20">
-      <button
-        onClick={() => navigate("/admin/veiculos")}
+      <Link
+        to="/admin/veiculos"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="w-4 h-4" /> Voltar para veículos
-      </button>
+        <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Voltar para veículos
+      </Link>
 
       <div className="mb-6">
         <h1 className="font-display font-bold text-2xl md:text-3xl">
@@ -338,8 +347,8 @@ function Editor() {
               {form.features.map((f, i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-sm">
                   {f}
-                  <button onClick={() => removeFeature(i)} className="hover:text-destructive">
-                    <X className="w-3 h-3" />
+                  <button onClick={() => removeFeature(i)} className="hover:text-destructive" aria-label={`Remover opcional ${f}`}>
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               ))}
@@ -355,10 +364,11 @@ function Editor() {
           disabled={save.isPending || !form.brand || !form.model || !form.price}
           className="flex-1 rounded-full h-12 font-semibold"
         >
-          {save.isPending ? "Salvando..." : isNew ? "Cadastrar veículo" : "Salvar alterações"}
+          {save.isPending ? "Salvando…" : isNew ? "Cadastrar veículo" : "Salvar alterações"}
         </Button>
         {!isNew && (
           <Button
+            type="button"
             variant="outline"
             onClick={() => {
               if (confirm("Remover este veículo definitivamente?")) remove.mutate();
@@ -429,5 +439,29 @@ function DynamicSelect({ label, value, onChange, options = [], placeholder = "Se
         </SelectContent>
       </Select>
     </Field>
+  );
+}
+
+function EditorSkeleton() {
+  return (
+    <div className="pb-20 animate-pulse">
+      <div className="h-5 w-32 bg-secondary rounded-full mb-6" />
+      <div className="h-8 w-48 bg-secondary rounded-xl mb-6" />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+        <div className="space-y-6">
+          {[180, 220, 160, 200].map((h, i) => (
+            <div key={i} className="bg-card rounded-3xl p-5 border border-border/50">
+              <div className="h-5 w-28 bg-secondary rounded-lg mb-4" />
+              <div className="grid grid-cols-2 gap-3">
+                {Array(4).fill(0).map((_, j) => (
+                  <div key={j} className="h-10 bg-secondary rounded-xl" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden lg:block h-64 bg-card rounded-3xl border border-border/50" />
+      </div>
+    </div>
   );
 }

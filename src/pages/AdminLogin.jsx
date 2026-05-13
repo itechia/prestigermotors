@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,8 @@ export default function AdminLogin() {
             <img
               src={settings.logo_url}
               alt={settings.store_name}
+              width={64}
+              height={64}
               className="h-16 w-auto object-contain"
             />
           ) : (
@@ -75,7 +77,7 @@ export default function AdminLogin() {
                   {settings.store_name.charAt(0).toUpperCase()}
                 </span>
               ) : (
-                <Car className="w-8 h-8 text-primary" />
+                <Car className="w-8 h-8 text-primary" aria-hidden="true" />
               )}
             </div>
           )}
@@ -128,8 +130,9 @@ export default function AdminLogin() {
                 onClick={() => setShowPwd((v) => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
+                aria-label={showPwd ? "Ocultar senha" : "Mostrar senha"}
               >
-                {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPwd ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -150,9 +153,9 @@ export default function AdminLogin() {
         </form>
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          <a href="/" className="underline underline-offset-2 hover:text-foreground">
+          <Link to="/" className="underline underline-offset-2 hover:text-foreground">
             ← Voltar ao site
-          </a>
+          </Link>
         </p>
       </div>
     </div>
