@@ -93,9 +93,9 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-safe flex flex-col relative">
+      <main className="flex-1 px-safe flex flex-col">
         <Suspense fallback={
-          <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="flex-1 min-h-[60vh] flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-secondary border-t-primary rounded-full animate-spin"></div>
           </div>
         }>

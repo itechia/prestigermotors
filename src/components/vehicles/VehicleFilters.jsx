@@ -84,6 +84,12 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
   const tax = useTaxonomies();
   const [localFilters, setLocalFilters] = useState(filters);
   const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
   useEffect(() => setLocalFilters(filters), [filters]);
 
   // For each dimension, compute which values actually have vehicles in stock
@@ -146,7 +152,7 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
 
   return (
     <div className="flex items-center gap-2">
-      <div className="relative flex-1">
+      <div className="relative flex-1 min-w-0">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <Input
           value={search}
@@ -158,9 +164,9 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="outline" className="h-12 rounded-full px-5 relative border-border">
-            <SlidersHorizontal className="w-4 h-4 mr-0 md:mr-2" />
-            <span className="hidden md:inline">Filtros</span>
+          <Button variant="outline" className="h-12 w-12 md:w-auto md:px-5 rounded-full flex-shrink-0 relative border-border">
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="hidden md:inline md:ml-2">Filtros</span>
             {activeCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
                 {activeCount}
@@ -168,7 +174,13 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-5">
+        <SheetContent
+          side={isMobile ? "bottom" : "right"}
+          className={isMobile
+            ? "w-full max-h-[88vh] rounded-t-2xl overflow-y-auto p-5"
+            : "w-full sm:max-w-md overflow-y-auto p-5"
+          }
+        >
           <SheetHeader className="pb-3">
             <SheetTitle className="font-display text-xl">Filtros</SheetTitle>
           </SheetHeader>
