@@ -31,14 +31,14 @@ const FALLBACK_FIELDS = [
 // Confirm-suffix used internally to track confirmation values per phone field.
 const CONFIRM_SUFFIX = "__confirm";
 
-export default function InterestFormDialog({ open, onOpenChange, vehicle }) {
+export default function InterestFormDialog({ open, onOpenChange, vehicle, defaultValues = {} }) {
   const settings = useStoreSettings();
   const fields = useMemo(() => {
     const list = settings.interest_form_fields;
     return Array.isArray(list) && list.length > 0 ? list : FALLBACK_FIELDS;
   }, [settings.interest_form_fields]);
 
-  const [values, setValues] = useState({});
+  const [values, setValues] = useState(defaultValues);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -48,7 +48,7 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle }) {
     onOpenChange(next);
     if (!next) {
       setTimeout(() => {
-        setValues({});
+        setValues(defaultValues);
         setDone(false);
         setSubmitting(false);
       }, 200);

@@ -108,7 +108,6 @@ export default function MobileSearchableSelect({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Pesquisar..."
-                autoFocus
                 style={{ fontSize: "16px" }}
                 className="h-9 pl-9 pr-9"
               />

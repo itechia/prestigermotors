@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/api/supabaseClient";
 import { motion } from "framer-motion";
@@ -26,6 +26,7 @@ import { buildWhatsAppHref } from "@/lib/whatsappMessage";
 export default function VehicleDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const settings = useStoreSettings();
   const tax = useTaxonomies();
   const labels = buildResolvers(tax);
@@ -34,11 +35,24 @@ export default function VehicleDetail() {
   const [interestOpen, setInterestOpen] = useState(false);
   // fsSlide: null = fechado, número = slide inicial (embed=0 quando existe, depois imagens)
   const [fsSlide, setFsSlide] = useState(null);
+  const autoOpenedRef = useRef(false);
 
   // Always start at the top when opening a vehicle
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [id]);
+
+  // Auto-open the interest form when URL has pre-filled params (link-sharing feature).
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    const nome = searchParams.get("nome") || "";
+    const tel = searchParams.get("tel") || "";
+    if (!nome && !tel) return;
+    if (settings.interest_webhook_enabled && settings.interest_webhook_url) {
+      autoOpenedRef.current = true;
+      setInterestOpen(true);
+    }
+  }, [settings.interest_webhook_enabled, settings.interest_webhook_url, searchParams]);
 
   // Mantém a janela de thumbnails visível ao redor do slide ativo.
   // Deve ficar antes dos early returns para não violar a rules-of-hooks.
@@ -115,6 +129,18 @@ export default function VehicleDetail() {
   // Rich WhatsApp message: title + specs + price + direct link to the vehicle.
   // The link generates a preview card with cover image (Mercado Livre style).
   const whatsappHref = buildWhatsAppHref(settings.whatsapp_number, vehicle);
+
+  // Build pre-filled form values from URL params (?nome=...&tel=...).
+  // Used when sharing a link that should open the interest form pre-populated.
+  const urlFormDefaults = (() => {
+    const nome = searchParams.get("nome") || "";
+    const tel = searchParams.get("tel") || "";
+    if (!nome && !tel) return {};
+    const d = {};
+    if (nome) d.name = nome;
+    if (tel) { d.phone = tel; d.phone__confirm = tel; }
+    return d;
+  })();
 
   // When the interest webhook is active, the "Tenho interesse" CTA opens the
   // customizable form modal instead of jumping straight to WhatsApp.
@@ -447,6 +473,7 @@ export default function VehicleDetail() {
         open={interestOpen}
         onOpenChange={setInterestOpen}
         vehicle={vehicle}
+        defaultValues={urlFormDefaults}
       />
 
       {fsSlide !== null && (

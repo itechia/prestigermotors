@@ -125,7 +125,7 @@ export default function SettingsHero({ form, update }) {
   return (
     <SettingsSection
       title="Banners"
-      desc="Adicione uma ou mais imagens para o banner principal do catálogo. Com múltiplos slides, o banner troca automaticamente a cada 5 segundos. Clique em um slide para editar."
+      desc="Adicione uma ou mais imagens para o banner principal do catálogo. Com múltiplos slides, o banner troca automaticamente no intervalo configurado abaixo."
     >
       {slides.length > 0 && (
         <div className="mb-6">
@@ -164,6 +164,17 @@ export default function SettingsHero({ form, update }) {
           </div>
         )}
       />
+
+      {slides.length > 1 && (
+        <TextField
+          label="Intervalo entre slides (segundos)"
+          type="number"
+          value={form.hero_slide_interval ?? 5}
+          onChange={(v) => update("hero_slide_interval", Number(v) || 5)}
+          placeholder="5"
+          hint="Tempo em segundos que cada slide fica visível antes de avançar automaticamente."
+        />
+      )}
     </SettingsSection>
   );
 }

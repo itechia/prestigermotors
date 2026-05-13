@@ -15,6 +15,7 @@ export default function Layout() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const settings = useStoreSettings();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   const { data: me } = useQuery({
     queryKey: ["me"],
@@ -103,41 +104,43 @@ export default function Layout() {
         </Suspense>
       </main>
 
-      {/* Footer — visible on mobile and desktop. Adds bottom padding on mobile so the fixed bottom nav doesn't cover its content. */}
-      <SiteFooter />
-      <div className="h-16 md:hidden" aria-hidden="true" />
+      {/* Footer and mobile nav are hidden on admin pages */}
+      {!isAdminRoute && <SiteFooter />}
+      {!isAdminRoute && <div className="h-16 md:hidden" aria-hidden="true" />}
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass border-t border-border/50">
-        <div
-          className="grid h-16"
-          style={{
-            gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
-            paddingBottom: "var(--safe-bottom)",
-          }}
-        >
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.to);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 transition-colors",
-                  active ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                <Icon
-                  className={cn("w-5 h-5", active && "scale-110")}
-                  strokeWidth={active ? 2.5 : 2}
-                />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {!isAdminRoute && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass border-t border-border/50">
+          <div
+            className="grid h-16"
+            style={{
+              gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
+              paddingBottom: "var(--safe-bottom)",
+            }}
+          >
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.to);
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 transition-colors",
+                    active ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <Icon
+                    className={cn("w-5 h-5", active && "scale-110")}
+                    strokeWidth={active ? 2.5 : 2}
+                  />
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }

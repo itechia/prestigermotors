@@ -84,12 +84,10 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
   const tax = useTaxonomies();
   const [localFilters, setLocalFilters] = useState(filters);
   const [open, setOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" ? window.innerWidth < 768 : false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  // Checked once on mount — we deliberately don't update on resize so the
+  // Sheet side never flips while it's open (flipping unmounts content and
+  // causes focus loss inside the form).
+  const [isMobile] = useState(() => typeof window !== "undefined" ? window.innerWidth < 768 : false);
   useEffect(() => setLocalFilters(filters), [filters]);
 
   // For each dimension, compute which values actually have vehicles in stock
@@ -286,27 +284,29 @@ export default function VehicleFilters({ filters, setFilters, search, setSearch,
             <FilterField label="Ano de fabricação">
               <div className="grid grid-cols-2 gap-2">
                 <Input
-                  type="number"
+                  type="text"
                   inputMode="numeric"
-                  min={1950}
-                  max={NEXT_YEAR}
+                  pattern="[0-9]*"
+                  maxLength={4}
                   placeholder="De"
                   value={localFilters.yearMin || ""}
-                  onChange={(e) =>
-                    setLocalFilters({ ...localFilters, yearMin: Number(e.target.value) || 0 })
-                  }
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    setLocalFilters({ ...localFilters, yearMin: Number(v) || 0 });
+                  }}
                   className="h-9"
                 />
                 <Input
-                  type="number"
+                  type="text"
                   inputMode="numeric"
-                  min={1950}
-                  max={NEXT_YEAR}
+                  pattern="[0-9]*"
+                  maxLength={4}
                   placeholder="Até"
                   value={localFilters.yearMax || ""}
-                  onChange={(e) =>
-                    setLocalFilters({ ...localFilters, yearMax: Number(e.target.value) || 0 })
-                  }
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    setLocalFilters({ ...localFilters, yearMax: Number(v) || 0 });
+                  }}
                   className="h-9"
                 />
               </div>
