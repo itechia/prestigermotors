@@ -11,7 +11,9 @@
       "Bash(git commit -m ' *)",
       "Bash(del \"c:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\src\\\\api\\\\base44Client.js\")",
       "Bash(npx eslint *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(node -e ' *)",
+      "Read(//tmp/**)"
     ]
   }
 }
