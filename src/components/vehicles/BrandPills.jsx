@@ -82,7 +82,7 @@ export default function BrandPills({ selected = [], onToggle, onClear }) {
       <div
         ref={scrollerRef}
         className={cn(
-          "flex gap-3 md:gap-5 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 py-1",
+          "flex gap-2 sm:gap-3 md:gap-5 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 py-1",
           overflowing ? "justify-start" : "justify-start md:justify-center",
           overflowing && "md:px-12"
         )}
@@ -98,7 +98,7 @@ export default function BrandPills({ selected = [], onToggle, onClear }) {
             >
               <div
                 className={cn(
-                  "w-14 h-14 md:w-16 md:h-16 rounded-full bg-card border flex items-center justify-center overflow-hidden transition-all",
+                  "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-card border flex items-center justify-center overflow-hidden transition-all",
                   isActive
                     ? "border-primary border-2 shadow-md"
                     : "border-border/60 group-hover:border-border"
@@ -108,7 +108,7 @@ export default function BrandPills({ selected = [], onToggle, onClear }) {
                   <img
                     src={b.logo_url}
                     alt={b.label}
-                    className="w-9 h-9 md:w-10 md:h-10 object-contain"
+                    className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain"
                     loading="lazy"
                   />
                 ) : (

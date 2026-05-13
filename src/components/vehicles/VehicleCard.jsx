@@ -39,7 +39,7 @@ function VehicleCard({ vehicle, index = 0 }) {
 
   return (
     <div className="card-fade-in" style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}>
-      <div className="group flex flex-col h-full bg-card rounded-3xl overflow-hidden border border-border/50 hover:border-border hover:shadow-xl transition-all duration-300">
+      <div className="group flex flex-col h-full bg-card rounded-2xl md:rounded-3xl overflow-hidden border border-border/50 hover:border-border hover:shadow-xl transition-all duration-300">
 
         {/* ── Área de imagem ───────────────────────────── */}
         <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
@@ -98,37 +98,37 @@ function VehicleCard({ vehicle, index = 0 }) {
           )}
         </div>
 
-        <Link to={detailHref} className="p-4 space-y-3 flex flex-col flex-1">
+        <Link to={detailHref} className="p-3 md:p-4 space-y-2 md:space-y-3 flex flex-col flex-1">
           <div>
-            <h3 className="font-display font-bold text-base leading-tight truncate">
+            <h3 className="font-display font-bold text-sm md:text-base leading-tight truncate">
               {vehicle.brand} {vehicle.model}
             </h3>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
+            <p className="text-[11px] md:text-xs text-muted-foreground truncate mt-0.5">
               {vehicle.version || `${vehicle.year}`}
             </p>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
+          <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-0.5 md:gap-1">
+              <Calendar className="w-3 h-3 flex-shrink-0" />
               <span>{formatYear(vehicle.manufacture_year, vehicle.year) || vehicle.year}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Gauge className="w-3 h-3" />
-              <span>{formatMileage(vehicle.mileage)}</span>
+            <div className="flex items-center gap-0.5 md:gap-1">
+              <Gauge className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{formatMileage(vehicle.mileage)}</span>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-border/50 mt-auto min-h-[64px] flex flex-col justify-end">
+          <div className="pt-2 md:pt-3 border-t border-border/50 mt-auto flex flex-col justify-end">
             {hasDiscount && (
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-0.5">
+              <div className="flex flex-wrap items-center gap-1 text-[10px] md:text-[11px] text-muted-foreground mb-0.5">
                 <span className="line-through">{formatCurrency(vehicle.price_old)}</span>
-                <span className="text-green-700 font-semibold">
+                <span className="text-green-700 font-semibold hidden sm:inline">
                   Economize {formatCurrency(savings)}
                 </span>
               </div>
             )}
-            <div className="font-display font-bold text-xl price-gradient leading-tight">
+            <div className="font-display font-bold text-base md:text-xl price-gradient leading-tight">
               {formatCurrency(vehicle.price)}
             </div>
           </div>
@@ -136,10 +136,10 @@ function VehicleCard({ vehicle, index = 0 }) {
           {vehicle.status !== "vendido" && (
             <button
               onClick={handleInterest}
-              className="interest-btn w-full mt-2 h-10 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              className="interest-btn w-full mt-1.5 md:mt-2 h-9 md:h-10 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-[10px] md:text-xs font-semibold uppercase tracking-wide md:tracking-wider transition-colors flex items-center justify-center gap-1.5 md:gap-2"
             >
-              <MessageCircle className="w-4 h-4" />
-              Tenho interesse
+              <MessageCircle className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
+              <span className="hidden xs:inline sm:hidden md:inline">Tenho </span>Interesse
             </button>
           )}
         </Link>

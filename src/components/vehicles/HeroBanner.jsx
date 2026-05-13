@@ -44,7 +44,7 @@ export default function HeroBanner() {
       {mobileImg &&
     <img
       src={mobileImg}
-      alt="" className="px-1 block md:hidden w-full h-32 sm:h-40 object-cover" />
+      alt="" className="block md:hidden w-full h-44 sm:h-52 object-cover object-center" />
 
 
     }
