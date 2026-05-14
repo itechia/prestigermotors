@@ -32,6 +32,9 @@ export default function SimpleListEditor({
 
   const showSearch = normalized.length > 6;
 
+  const parentLabelFor = (value) =>
+    parentOptions?.find((o) => o.value === value)?.label || "—";
+
   // Filtered items preserving original indices for correct edit/remove operations
   const visibleItems = normalized
     .map((item, i) => ({ item, i }))
@@ -75,9 +78,6 @@ export default function SimpleListEditor({
     next[i] = { ...next[i], parent };
     emit(next);
   };
-
-  const parentLabelFor = (value) =>
-    parentOptions?.find((o) => o.value === value)?.label || "—";
 
   return (
     <div className="space-y-2">

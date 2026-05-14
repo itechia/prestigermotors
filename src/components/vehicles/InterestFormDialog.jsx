@@ -193,7 +193,7 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
               </Button>
 
               <p className="text-[10px] text-muted-foreground text-center leading-tight">
-                Ao enviar, você concorda em receber contato no canal informado.
+                Ao enviar, você concorda em ser contactado pela equipe da loja
               </p>
             </form>
           </>
