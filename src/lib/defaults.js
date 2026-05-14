@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS = {
   hero_image_url: "",
   hero_image_url_mobile: "",
   hero_slides: [],
+  hero_slide_interval: 5,
   brands: [],
   hero_stat_rating: "",
   hero_stat_rating_label: "",
