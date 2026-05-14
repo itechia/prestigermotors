@@ -71,6 +71,9 @@ export const DEFAULT_SETTINGS = {
   interest_webhook_enabled: false,
   interest_webhook_url: "",
   interest_webhook_secret: "",
+  interest_webhook_auth_enabled: false,
+  interest_webhook_auth_user: "",
+  interest_webhook_auth_pass: "",
   interest_form_title: "Tenho interesse neste veículo",
   interest_form_subtitle: "Preencha seus dados e nossa equipe entra em contato em poucos minutos.",
   interest_form_submit_label: "Enviar interesse",
@@ -80,6 +83,24 @@ export const DEFAULT_SETTINGS = {
   sell_webhook_enabled: false,
   sell_webhook_url: "",
   sell_webhook_secret: "",
+  sell_webhook_auth_enabled: false,
+  sell_webhook_auth_user: "",
+  sell_webhook_auth_pass: "",
+
+  // Footer column titles/descs
+  footer_institutional_title: "Institucional",
+  footer_institutional_desc: "",
+  footer_help_title: "Atendimento",
+  footer_help_desc: "",
+  footer_payment_title: "Negócios",
+  footer_payment_desc: "",
+
+  // Social custom logos
+  social_logo_instagram: "",
+  social_logo_facebook: "",
+  social_logo_youtube: "",
+  social_logo_tiktok: "",
+  social_logo_whatsapp: "",
 };
 
 // Merge admin-provided settings with defaults.
