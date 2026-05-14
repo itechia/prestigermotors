@@ -56,14 +56,16 @@ export default function HeroBanner() {
 
   const Inner = (
     <>
-      {/* Mobile: natural height, max 224px — same as original to avoid cropping */}
+      {/* Mobile: fixed height container prevents layout shift while image loads */}
       {mobileImg && (
-        <img
-          src={mobileImg}
-          alt=""
-          className="block md:hidden w-full h-auto max-h-56 object-cover"
-          loading="eager"
-        />
+        <div className="block md:hidden w-full h-48 bg-secondary overflow-hidden">
+          <img
+            src={mobileImg}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="eager"
+          />
+        </div>
       )}
       {/* Desktop: fixed height prevents layout shift */}
       {desktopImg && (
@@ -81,7 +83,7 @@ export default function HeroBanner() {
 
   return (
     <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary">
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         <motion.div
           key={index}
           initial={{ opacity: 0 }}

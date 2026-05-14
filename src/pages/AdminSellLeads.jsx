@@ -67,6 +67,10 @@ export default function AdminSellLeads() {
     });
   }, [leads, search, statusFilter]);
 
+  // Always resolve the open lead from the fresh query data so the dialog
+  // reflects the latest state after any mutation + refetch.
+  const detailLead = selected ? (leads.find((l) => l.id === selected.id) ?? selected) : null;
+
   const counts = useMemo(() => {
     const c = { all: leads.length, novo: 0, em_analise: 0, contatado: 0, aprovado: 0, recusado: 0 };
     leads.forEach((l) => { c[l.status || "novo"] = (c[l.status || "novo"] || 0) + 1; });
@@ -75,18 +79,14 @@ export default function AdminSellLeads() {
 
   const updateMut = useMutation({
     mutationFn: async ({ id, data }) => {
-      const { data: result, error } = await supabase
+      const { error } = await supabase
         .from("sell_leads")
         .update({ ...data, updated_date: new Date().toISOString() })
-        .eq("id", id)
-        .select()
-        .single();
+        .eq("id", id);
       if (error) throw error;
-      return result;
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sellLeads"] });
-      if (selected && result) setSelected({ ...selected, ...result });
       toast.success("Proposta atualizada");
     },
     onError: () => toast.error("Erro ao atualizar proposta"),
@@ -171,7 +171,8 @@ export default function AdminSellLeads() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold truncate">
-                    {lead.brand} {lead.model} {lead.year ? `· ${lead.year}` : ""}
+                    {[lead.brand, lead.model].filter(Boolean).join(" ") || lead.owner_name || "Sem identificação"}
+                    {lead.year ? ` · ${lead.year}` : ""}
                   </h3>
                   <span className={cn(
                     "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
@@ -200,12 +201,12 @@ export default function AdminSellLeads() {
       )}
 
       <LeadDetailDialog
-        lead={selected}
+        lead={detailLead}
         onClose={() => setSelected(null)}
-        onUpdate={(data) => updateMut.mutate({ id: selected.id, data })}
+        onUpdate={(data) => updateMut.mutate({ id: detailLead.id, data })}
         onRemove={() => {
           if (confirm("Remover esta proposta definitivamente?")) {
-            removeMut.mutate(selected.id);
+            removeMut.mutate(detailLead.id);
           }
         }}
       />
@@ -243,7 +244,8 @@ function LeadDetailDialog({ lead, onClose, onUpdate, onRemove }) {
         <div className="p-6 border-b border-border/50">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
-              {lead.brand} {lead.model} {lead.year ? `· ${lead.year}` : ""}
+              {[lead.brand, lead.model].filter(Boolean).join(" ") || "Sem identificação"}
+              {lead.year ? ` · ${lead.year}` : ""}
             </DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -282,7 +284,7 @@ function LeadDetailDialog({ lead, onClose, onUpdate, onRemove }) {
           {/* Vehicle */}
           <SectionBlock title="Veículo">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <InfoLine icon={Car} label="Marca/Modelo" value={`${lead.brand} ${lead.model}`} />
+              <InfoLine icon={Car} label="Marca/Modelo" value={[lead.brand, lead.model].filter(Boolean).join(" ")} />
               <InfoLine icon={Calendar} label="Ano" value={`${lead.manufacture_year || "-"} / ${lead.year || "-"}`} />
               <InfoLine icon={Gauge} label="Quilometragem" value={lead.mileage ? formatMileage(lead.mileage) : "-"} />
               <InfoLine label="Versão" value={lead.version} />
