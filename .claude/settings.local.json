@@ -14,7 +14,8 @@
       "Bash(npx tsc *)",
       "Bash(node -e ' *)",
       "Read(//tmp/**)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(xargs grep *)"
     ]
   }
 }

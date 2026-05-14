@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import AdminShell from "../components/admin/AdminShell";
 import { formatCurrency, formatMileage } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/AuthContext";
 
 const STATUS_LABELS = {
   novo: "Novo",
@@ -36,6 +37,7 @@ const STATUS_COLORS = {
 
 export default function AdminSellLeads() {
   const queryClient = useQueryClient();
+  const { authChecked } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState(null);
@@ -51,6 +53,8 @@ export default function AdminSellLeads() {
       if (error) throw error;
       return data ?? [];
     },
+    enabled: authChecked,
+    staleTime: 0,
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
@@ -137,7 +141,7 @@ export default function AdminSellLeads() {
       </div>
 
       {/* List */}
-      {isLoading ? (
+      {!authChecked || isLoading ? (
         <div className="space-y-2">
           {Array(4).fill(0).map((_, i) => (
             <div key={i} className="h-20 bg-secondary rounded-2xl animate-pulse" />

@@ -1,5 +1,5 @@
 // Catalog page — public store front.
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchVehiclesCatalog, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
 
@@ -10,18 +10,30 @@ import VehicleFilters, { DEFAULT_FILTERS } from "../components/vehicles/VehicleF
 import VehicleCard from "../components/vehicles/VehicleCard";
 import Reviews from "../components/vehicles/Reviews";
 import { slugify } from "@/lib/useTaxonomies";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+const FEATURED_LIMIT = 8;
+const REGULAR_LIMIT  = 16;
 
 export default function Catalog() {
   const [search, setSearch] = useState("");
   // Multiple brands can be selected at once; empty array = "Todas".
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [featuredVisible, setFeaturedVisible] = useState(FEATURED_LIMIT);
+  const [regularVisible, setRegularVisible]   = useState(REGULAR_LIMIT);
 
   const toggleBrand = (name) => {
     setSelectedBrands((prev) =>
       prev.includes(name) ? prev.filter((b) => b !== name) : [...prev, name]
     );
   };
+
+  // Reset pagination whenever the user changes any filter, search or brand
+  useEffect(() => {
+    setFeaturedVisible(FEATURED_LIMIT);
+    setRegularVisible(REGULAR_LIMIT);
+  }, [search, selectedBrands, filters]);
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: VEHICLES_QUERY_KEY,
@@ -114,10 +126,19 @@ export default function Catalog() {
               <section>
                 <SectionHeader title="Em destaque" subtitle="Seleção especial da nossa loja" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                  {featured.map((v, i) => (
+                  {featured.slice(0, featuredVisible).map((v, i) => (
                     <VehicleCard key={v.id} vehicle={v} index={i} />
                   ))}
                 </div>
+                {featured.length > FEATURED_LIMIT && (
+                  <ShowMoreButton
+                    visible={featuredVisible}
+                    total={featured.length}
+                    limit={FEATURED_LIMIT}
+                    onMore={() => setFeaturedVisible((n) => n + FEATURED_LIMIT)}
+                    onLess={() => setFeaturedVisible(FEATURED_LIMIT)}
+                  />
+                )}
               </section>
             )}
 
@@ -128,10 +149,19 @@ export default function Catalog() {
                   subtitle={`${filtered.length} opção${filtered.length > 1 ? "es" : ""} pronta${filtered.length > 1 ? "s" : ""} para entrega`}
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                  {regular.map((v, i) => (
+                  {regular.slice(0, regularVisible).map((v, i) => (
                     <VehicleCard key={v.id} vehicle={v} index={i} />
                   ))}
                 </div>
+                {regular.length > REGULAR_LIMIT && (
+                  <ShowMoreButton
+                    visible={regularVisible}
+                    total={regular.length}
+                    limit={REGULAR_LIMIT}
+                    onMore={() => setRegularVisible((n) => n + REGULAR_LIMIT)}
+                    onLess={() => setRegularVisible(REGULAR_LIMIT)}
+                  />
+                )}
               </section>
             )}
 
@@ -149,6 +179,40 @@ function SectionHeader({ title, subtitle }) {
       <div>
         <h2 className="font-display font-bold text-2xl md:text-3xl">{title}</h2>
         <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function ShowMoreButton({ visible, total, limit, onMore, onLess }) {
+  const hasMore = visible < total;
+  const showing = Math.min(visible, total);
+
+  return (
+    <div className="flex flex-col items-center gap-2 mt-8">
+      <p className="text-sm text-muted-foreground">
+        Exibindo <span className="font-semibold text-foreground">{showing}</span> de{" "}
+        <span className="font-semibold text-foreground">{total}</span> veículos
+      </p>
+      <div className="flex gap-2">
+        {hasMore && (
+          <button
+            onClick={onMore}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border bg-card hover:bg-secondary transition-colors text-sm font-medium"
+          >
+            <ChevronDown className="w-4 h-4" />
+            Ver mais {Math.min(limit, total - visible)} veículos
+          </button>
+        )}
+        {visible > limit && (
+          <button
+            onClick={onLess}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border bg-card hover:bg-secondary transition-colors text-sm font-medium text-muted-foreground"
+          >
+            <ChevronUp className="w-4 h-4" />
+            Ver menos
+          </button>
+        )}
       </div>
     </div>
   );
