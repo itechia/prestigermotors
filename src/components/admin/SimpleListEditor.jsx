@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Pencil, Check } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -23,11 +23,26 @@ export default function SimpleListEditor({
   const [draft, setDraft] = useState("");
   const [draftParent, setDraftParent] = useState(usesParent && parentOptions[0] ? parentOptions[0].value : "");
   const [editing, setEditing] = useState(null); // index of the row being edited
+  const [search, setSearch] = useState("");
 
   // Normalize items into uniform shape for editing
   const normalized = items.map((it) =>
     typeof it === "string" ? { label: it, parent: "" } : { label: it.label || "", parent: it.parent || "" }
   );
+
+  const showSearch = normalized.length > 6;
+
+  // Filtered items preserving original indices for correct edit/remove operations
+  const visibleItems = normalized
+    .map((item, i) => ({ item, i }))
+    .filter(({ item }) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        item.label.toLowerCase().includes(q) ||
+        (usesParent && parentLabelFor(item.parent).toLowerCase().includes(q))
+      );
+    });
 
   const emit = (next) => {
     if (usesParent) {
@@ -66,9 +81,35 @@ export default function SimpleListEditor({
 
   return (
     <div className="space-y-2">
+      {showSearch && (
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar..."
+            className="h-8 pl-8 pr-8 rounded-lg text-sm bg-secondary/40 border-border/50"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
+
       {normalized.length > 0 && (
         <div className="space-y-1.5">
-          {normalized.map((item, i) => {
+          {visibleItems.length === 0 && search && (
+            <p className="text-sm text-muted-foreground text-center py-3">
+              Nenhum resultado para &ldquo;{search}&rdquo;
+            </p>
+          )}
+          {visibleItems.map(({ item, i }) => {
             const isEditing = editing === i;
             return (
               <div
@@ -165,6 +206,14 @@ export default function SimpleListEditor({
           <Plus className="w-4 h-4" /> Adicionar
         </button>
       </div>
+
+      {normalized.length > 0 && (
+        <p className="text-xs text-muted-foreground text-right">
+          {search
+            ? `${visibleItems.length} de ${normalized.length} itens`
+            : `${normalized.length} ${normalized.length === 1 ? "item" : "itens"}`}
+        </p>
+      )}
     </div>
   );
 }
