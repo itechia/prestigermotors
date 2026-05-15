@@ -179,10 +179,10 @@ export default function VehicleDetail() {
             key={activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            className="relative aspect-[4/3] sm:aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
+            className="relative rounded-3xl overflow-hidden bg-secondary"
           >
             {showingEmbed ? (
-              <>
+              <div className="aspect-video relative">
                 <iframe
                   key="embed"
                   srcDoc={vehicle.embed_html}
@@ -191,7 +191,6 @@ export default function VehicleDetail() {
                   scrolling="no"
                   className="w-full h-full border-0 block"
                 />
-                {/* Abrir fullscreen no slide atual */}
                 <button
                   onClick={() => setFsSlide(activeImage)}
                   className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
@@ -200,16 +199,14 @@ export default function VehicleDetail() {
                 >
                   <Maximize2 className="w-4 h-4" />
                 </button>
-              </>
+              </div>
             ) : (
               <img
                 src={images[imageIndex]}
                 alt={vehicle.model}
-                className="w-full h-full object-cover cursor-zoom-in"
+                className="w-full h-auto block cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
                 decoding="async"
-                width={1200}
-                height={900}
               />
             )}
 
