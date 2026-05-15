@@ -179,17 +179,17 @@ export default function VehicleDetail() {
             key={activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            className="relative rounded-3xl overflow-hidden bg-secondary"
+            className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-secondary"
           >
             {showingEmbed ? (
-              <div className="aspect-video relative">
+              <>
                 <iframe
                   key="embed"
                   srcDoc={vehicle.embed_html}
                   title={`${vehicle.brand} ${vehicle.model} 360°`}
                   sandbox="allow-scripts allow-same-origin"
                   scrolling="no"
-                  className="w-full h-full border-0 block"
+                  className="absolute inset-0 w-full h-full border-0 block"
                 />
                 <button
                   onClick={() => setFsSlide(activeImage)}
@@ -199,13 +199,12 @@ export default function VehicleDetail() {
                 >
                   <Maximize2 className="w-4 h-4" />
                 </button>
-              </div>
+              </>
             ) : (
               <img
                 src={images[imageIndex]}
                 alt={vehicle.model}
-                className="w-full block cursor-zoom-in object-cover object-bottom"
-                style={{ height: "auto", maxHeight: "70vh" }}
+                className="w-full h-full object-cover object-bottom cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
                 decoding="async"
               />
