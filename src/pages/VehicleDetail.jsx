@@ -173,13 +173,13 @@ export default function VehicleDetail() {
       </button>
 
       <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
-        {/* Gallery — segunda no mobile, primeira no desktop */}
-        <div className="order-last lg:order-first lg:col-span-3 space-y-3">
+        {/* Gallery */}
+        <div className="lg:col-span-3 space-y-3">
           <motion.div
             key={activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            className="relative aspect-video sm:aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
+            className="relative aspect-[4/3] sm:aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
           >
             {showingEmbed ? (
               <>
@@ -202,10 +202,9 @@ export default function VehicleDetail() {
               </>
             ) : (
               <img
-                src={imgUrl(images[imageIndex], { w: 900, q: 82 })}
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imageIndex]; }}
+                src={images[imageIndex]}
                 alt={vehicle.model}
-                className="w-full h-full object-contain cursor-zoom-in"
+                className="w-full h-full object-cover cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
                 decoding="async"
               />
@@ -357,8 +356,8 @@ export default function VehicleDetail() {
           )}
         </div>
 
-        {/* Info — primeira no mobile, segunda no desktop */}
-        <div className="order-first lg:order-last lg:col-span-2 space-y-5">
+        {/* Info */}
+        <div className="lg:col-span-2 space-y-5">
           <div>
             <h1 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl leading-tight">
               {vehicle.brand} {vehicle.model}
@@ -530,7 +529,7 @@ export default function VehicleDetail() {
         <FullscreenViewer
           slides={[
             ...(hasEmbed ? [{ type: "embed", html: vehicle.embed_html }] : []),
-            ...images.map(src => ({ type: "image", src: imgUrl(src, { w: 1400, q: 88 }) || src, srcFallback: src })),
+            ...images.map(src => ({ type: "image", src })),
           ]}
           initialSlide={fsSlide}
           onClose={() => setFsSlide(null)}
@@ -712,7 +711,6 @@ function FullscreenViewer({ slides, initialSlide, onClose }) {
         >
           <img
             src={current.src}
-            onError={(e) => { e.currentTarget.onerror = null; if (current.srcFallback) e.currentTarget.src = current.srcFallback; }}
             alt={`Imagem ${idx + 1}`}
             draggable={false}
             onDoubleClick={onDblClick}
