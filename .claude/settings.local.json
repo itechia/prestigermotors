@@ -24,7 +24,8 @@
       "Bash(npm uninstall *)",
       "Read(//c/Users/Rogério Pimentel/.claude/projects/c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors/memory/**)",
       "Bash(git rm *)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory"
