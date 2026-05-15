@@ -142,7 +142,8 @@ function VehicleCard({ vehicle, index = 0 }) {
           {vehicle.status !== "vendido" && (
             <button
               onClick={handleInterest}
-              className="interest-btn w-full mt-2 h-10 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              aria-label={`Tenho interesse em ${vehicle.brand} ${vehicle.model}`}
+              className="interest-btn w-full mt-2 h-10 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <MessageCircle className="w-4 h-4" />
               Tenho interesse

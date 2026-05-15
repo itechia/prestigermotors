@@ -10,7 +10,7 @@ export default function SellMyVehicle() {
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-10 pb-2 md:pb-10">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-12 pb-2 md:pb-10">
       {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}

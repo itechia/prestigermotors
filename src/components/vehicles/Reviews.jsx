@@ -83,12 +83,12 @@ export default function Reviews() {
         {reviews.map((r, i) => (
           <div
             key={i}
-            className="snap-start flex-shrink-0 w-[85%] sm:w-[60%] md:w-[calc((100%-2rem)/3)] bg-card border border-border/50 rounded-3xl p-5 relative"
+            className="snap-start flex-shrink-0 w-[85%] sm:w-[55%] md:w-[340px] lg:w-[380px] bg-card border border-border/50 rounded-3xl p-5 relative"
           >
             <Quote className="w-5 h-5 text-muted-foreground/30 absolute top-5 right-5" />
             <div className="flex items-center gap-3 mb-3">
               {r.avatar ? (
-                <img src={r.avatar} alt={r.name} className="w-10 h-10 rounded-full object-cover" />
+                <img src={r.avatar} alt={r.name} className="w-10 h-10 rounded-full object-cover" width={40} height={40} />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
                   {r.name?.[0]?.toUpperCase()}
@@ -111,6 +111,8 @@ export default function Reviews() {
                 alt=""
                 className="mt-3 w-full aspect-[4/3] object-cover rounded-2xl"
                 loading="lazy"
+                width={320}
+                height={240}
               />
             )}
           </div>

@@ -50,6 +50,8 @@ export default function Layout() {
                 src={settings.logo_url}
                 alt={settings.store_name}
                 className="h-9 w-auto object-contain"
+                width={36}
+                height={36}
               />
             ) : (
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
@@ -65,7 +67,7 @@ export default function Layout() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.to);

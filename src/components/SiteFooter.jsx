@@ -54,12 +54,12 @@ export default function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background mt-6 md:mt-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 lg:gap-16">
           {/* Brand column */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               {s.logo_url && (
-                <img src={s.logo_url} alt={s.store_name} className="h-8 w-auto object-contain" />
+                <img src={s.logo_url} alt={s.store_name} className="h-8 w-auto object-contain" width={32} height={32} />
               )}
               <span
                 className="text-lg tracking-tight"

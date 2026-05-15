@@ -179,7 +179,7 @@ export default function VehicleDetail() {
             key={activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            className="relative aspect-[4/3] sm:aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
+            className="relative aspect-[4/3] sm:aspect-[16/11] lg:aspect-[16/10] rounded-3xl overflow-hidden bg-secondary"
           >
             {showingEmbed ? (
               <>
@@ -195,6 +195,7 @@ export default function VehicleDetail() {
                 <button
                   onClick={() => setFsSlide(activeImage)}
                   className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                  aria-label="Abrir tela cheia"
                   title="Tela cheia"
                 >
                   <Maximize2 className="w-4 h-4" />
@@ -207,6 +208,8 @@ export default function VehicleDetail() {
                 className="w-full h-full object-cover cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
                 decoding="async"
+                width={1200}
+                height={900}
               />
             )}
 
@@ -226,6 +229,7 @@ export default function VehicleDetail() {
             <div className="absolute top-4 right-4 flex gap-2">
               <button
                 onClick={handleShare}
+                aria-label="Compartilhar veículo"
                 className="w-11 h-11 rounded-full bg-white text-slate-900 dark:bg-slate-900/90 dark:text-white dark:border dark:border-white/20 backdrop-blur-sm flex items-center justify-center hover:scale-105 transition-transform shadow-md"
               >
                 <Share2 className="w-5 h-5" />
@@ -236,12 +240,14 @@ export default function VehicleDetail() {
               <>
                 <button
                   onClick={prevImage}
+                  aria-label="Imagem anterior"
                   className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white text-slate-900 dark:bg-slate-900/90 dark:text-white dark:border dark:border-white/20 backdrop-blur-sm flex items-center justify-center hover:scale-105 transition-transform shadow-md"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={nextImage}
+                  aria-label="Próxima imagem"
                   className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white text-slate-900 dark:bg-slate-900/90 dark:text-white dark:border dark:border-white/20 backdrop-blur-sm flex items-center justify-center hover:scale-105 transition-transform shadow-md"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -405,7 +411,7 @@ export default function VehicleDetail() {
           )}
 
           {/* Quick specs */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
             <SpecCard icon={Calendar} label="Ano" value={formatYear(vehicle.manufacture_year, vehicle.year)} />
             <SpecCard icon={Gauge} label="Quilometragem" value={formatMileage(vehicle.mileage)} />
             <SpecCard icon={Fuel} label="Combustível" value={labels.fuelLabel(vehicle.fuel_type) || "-"} />
@@ -420,7 +426,7 @@ export default function VehicleDetail() {
               <button
                 type="button"
                 onClick={handleInterestClick}
-                className="interest-btn w-full h-14 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-sm font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                className="interest-btn w-full h-14 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-sm font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 <MessageCircle className="w-5 h-5" />
                 Tenho interesse
@@ -469,7 +475,7 @@ export default function VehicleDetail() {
           {settings.guarantee_section_subtitle && (
             <p className="text-primary-foreground/70 dark:text-muted-foreground text-sm max-w-xl">{settings.guarantee_section_subtitle}</p>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             {settings.guarantees.map((g, i) => (
               <div key={i}>
                 <div className="w-10 h-10 rounded-xl bg-white/10 dark:bg-accent/15 flex items-center justify-center mb-3">
@@ -486,7 +492,7 @@ export default function VehicleDetail() {
       {/* Ficha técnica */}
       <div className="mt-12 bg-secondary/50 rounded-3xl p-6 md:p-8">
         <h2 className="font-display font-bold text-2xl mb-5">Ficha técnica</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           <DetailRow label="Marca" value={vehicle.brand} />
           <DetailRow label="Modelo" value={vehicle.model} />
           <DetailRow label="Ano modelo" value={vehicle.year} />
@@ -510,7 +516,7 @@ export default function VehicleDetail() {
           <button
             type="button"
             onClick={handleInterestClick}
-            className="interest-btn w-full h-12 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+            className="interest-btn w-full h-12 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             <MessageCircle className="w-4 h-4" />
             Tenho interesse

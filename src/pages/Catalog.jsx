@@ -96,7 +96,7 @@ export default function Catalog() {
       </div>
 
       {/* Sticky search + brands — sem margem negativa */}
-      <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-md border-b border-border/20">
+      <div className="sticky top-16 z-30 glass border-b border-border/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
           <VehicleFilters
             filters={filters}
@@ -115,7 +115,7 @@ export default function Catalog() {
       </div>
 
       {/* Vehicle grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-4 pb-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 md:space-y-12 pt-4 md:pt-6 pb-0">
         {isLoading ? (
           <LoadingGrid />
         ) : filtered.length === 0 ? (
