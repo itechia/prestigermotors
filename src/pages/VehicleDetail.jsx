@@ -179,7 +179,7 @@ export default function VehicleDetail() {
             key={activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            className="relative aspect-[4/3] sm:aspect-[16/11] lg:aspect-[16/10] rounded-3xl overflow-hidden bg-secondary"
+            className="relative aspect-[4/3] sm:aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
           >
             {showingEmbed ? (
               <>
@@ -411,7 +411,7 @@ export default function VehicleDetail() {
           )}
 
           {/* Quick specs */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <SpecCard icon={Calendar} label="Ano" value={formatYear(vehicle.manufacture_year, vehicle.year)} />
             <SpecCard icon={Gauge} label="Quilometragem" value={formatMileage(vehicle.mileage)} />
             <SpecCard icon={Fuel} label="Combustível" value={labels.fuelLabel(vehicle.fuel_type) || "-"} />

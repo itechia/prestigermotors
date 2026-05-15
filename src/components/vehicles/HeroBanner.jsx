@@ -54,7 +54,7 @@ export default function HeroBanner() {
   // Container always renders with fixed height — prevents layout shift while loading
   // and during slide transitions. bg-secondary acts as placeholder skeleton.
   return (
-    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full aspect-[2.5/1] sm:aspect-[3/1] md:aspect-[3.2/1] lg:aspect-[3.5/1] max-h-[420px]">
+    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full aspect-[5/2] sm:aspect-[3/1] md:aspect-auto md:h-56 lg:h-64 xl:h-72">
       {current && (
         <>
           <AnimatePresence mode="sync">
