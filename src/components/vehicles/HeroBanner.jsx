@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useStoreSettings } from "@/lib/useStoreSettings";
+import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { cn } from "@/lib/utils";
 import { imgUrl } from "@/lib/imgUrl";
 
@@ -47,8 +48,14 @@ export default function HeroBanner() {
     startTimer();
   };
 
-  // Sem imagens cadastradas: banner não existe
-  if (slides.length === 0) return null;
+  // Settings ainda carregando: mostra skeleton para evitar layout shift
+  const settingsLoaded = s !== DEFAULT_SETTINGS;
+  if (slides.length === 0) {
+    if (!settingsLoaded) {
+      return <div className="w-full aspect-[3/1] md:aspect-[5/1] rounded-2xl md:rounded-3xl bg-secondary/60 animate-pulse" />;
+    }
+    return null;
+  }
 
   const current = slides[index];
   const desktopImg = current.image_desktop || current.image_mobile;
@@ -83,7 +90,7 @@ export default function HeroBanner() {
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover"
                   loading="eager"
-                  fetchpriority="high"
+                  fetchPriority="high"
                 />
               </picture>
             </a>

@@ -158,10 +158,11 @@ export default function VehicleDetail() {
     }
   };
 
-  // Slide 0 = embed (quando existe); slides 1..N = images[0..N-1]
-  const totalSlides = (hasEmbed ? 1 : 0) + images.length;
-  const showingEmbed = hasEmbed && activeImage === 0;
-  const imageIndex = hasEmbed ? activeImage - 1 : activeImage;
+  // Slides 0..N-1 = images; slide N = embed (quando existe).
+  // Embed fica por último para a primeira imagem exibida ser sempre a foto do carro.
+  const totalSlides = images.length + (hasEmbed ? 1 : 0);
+  const showingEmbed = hasEmbed && activeImage === images.length;
+  const imageIndex = activeImage; // imagens estão nos índices 0..N-1
   const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
@@ -204,11 +205,13 @@ export default function VehicleDetail() {
               </>
             ) : (
               <img
-                src={images[imageIndex]}
+                src={imgUrl(images[imageIndex], { w: 1200, q: 85 })}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imageIndex]; }}
                 alt={vehicle.model}
-                className="w-full h-full object-cover object-bottom cursor-zoom-in"
+                className="w-full h-full object-cover object-center cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
-                decoding="async"
+                loading="eager"
+                fetchPriority={activeImage === 0 ? "high" : "auto"}
               />
             )}
 
@@ -262,12 +265,12 @@ export default function VehicleDetail() {
               <div className="sm:hidden overflow-x-auto scrollbar-hide">
                 <div className="flex gap-2 pb-1">
                   {Array.from({ length: totalSlides }).map((_, slideIdx) => {
-                    const isEmbed = hasEmbed && slideIdx === 0;
-                    const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
+                    const isEmbed = hasEmbed && slideIdx === images.length;
+                    const imgIdx = slideIdx;
                     return isEmbed ? (
                       <button
                         key="embed-sm"
-                        onClick={() => setActiveImage(0)}
+                        onClick={() => setActiveImage(images.length)}
                         className={cn(
                           "flex-shrink-0 w-14 aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
                           activeImage === 0
@@ -314,12 +317,12 @@ export default function VehicleDetail() {
                     if (slideIdx >= totalSlides) {
                       return <div key={col} className="aspect-square" />;
                     }
-                    const isEmbed = hasEmbed && slideIdx === 0;
-                    const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
+                    const isEmbed = hasEmbed && slideIdx === images.length;
+                    const imgIdx = slideIdx;
                     return isEmbed ? (
                       <button
                         key="embed"
-                        onClick={() => setActiveImage(0)}
+                        onClick={() => setActiveImage(images.length)}
                         className={cn(
                           "aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
                           activeImage === 0
@@ -533,8 +536,8 @@ export default function VehicleDetail() {
       {fsSlide !== null && (
         <FullscreenViewer
           slides={[
-            ...(hasEmbed ? [{ type: "embed", html: vehicle.embed_html }] : []),
             ...images.map(src => ({ type: "image", src })),
+            ...(hasEmbed ? [{ type: "embed", html: vehicle.embed_html }] : []),
           ]}
           initialSlide={fsSlide}
           onClose={() => setFsSlide(null)}
