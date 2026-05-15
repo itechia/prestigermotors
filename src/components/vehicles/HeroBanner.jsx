@@ -50,12 +50,10 @@ export default function HeroBanner() {
   const current = slides.length > 0 ? slides[index] : null;
   const desktopImg = current ? (current.image_desktop || current.image_mobile) : null;
   const mobileImg = current ? (current.image_mobile || current.image_desktop) : null;
-  // Se não há imagem mobile dedicada, o admin só cadastrou imagem 5:1 (desktop).
-  // Nesse caso usa aspect-[5/1] no mobile também para não cortar. Se há imagem
-  // mobile separada (3:1), usa aspect-[3/1] no mobile conforme especificado no admin.
-  const hasMobileImg = current
-    ? Boolean(current.image_mobile && current.image_mobile !== current.image_desktop)
-    : false;
+  // Se qualquer slide tem imagem mobile dedicada usa aspect-[3/1] (900×300 px).
+  // Caso contrário usa aspect-[5/1] em todos os breakpoints (só imagem desktop 1600×320).
+  // Avaliado em todos os slides para evitar layout shift durante transições.
+  const hasMobileImg = slides.some(s => Boolean(s.image_mobile));
 
   return (
     <div className={`relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full md:aspect-[5/1] ${hasMobileImg ? "aspect-[3/1]" : "aspect-[5/1]"}`}>
