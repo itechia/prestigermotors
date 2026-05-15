@@ -164,10 +164,10 @@ function StatCard({ icon: Icon, label, value, loading, small, accent }) {
   );
 }
 
-function QuickAction({ to, icon: Icon, title, desc, badge }) {
+function QuickAction({ href, icon: Icon, title, desc, badge }) {
   return (
     <Link
-      href={to}
+      href={href}
       className="group bg-card rounded-2xl p-5 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all flex items-center gap-4 relative"
     >
       <div className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center relative">
