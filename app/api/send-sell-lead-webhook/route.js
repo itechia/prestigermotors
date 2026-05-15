@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 function buildAuthHeader(settings) {
   if (settings.sell_webhook_auth_enabled && settings.sell_webhook_auth_user) {
@@ -18,6 +20,7 @@ function buildAuthHeader(settings) {
 
 export async function POST(request) {
   try {
+    const supabase = getSupabase();
     const body = await request.json().catch(() => ({}));
     const { lead_id } = body;
 
