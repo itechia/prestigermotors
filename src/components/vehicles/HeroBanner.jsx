@@ -52,7 +52,7 @@ export default function HeroBanner() {
   const settingsLoaded = s !== DEFAULT_SETTINGS;
   if (slides.length === 0) {
     if (!settingsLoaded) {
-      return <div className="w-full aspect-[3/1] md:aspect-[5/1] rounded-2xl md:rounded-3xl bg-secondary/60 animate-pulse" />;
+      return <div className="w-full aspect-[3/1] md:aspect-[4/1] rounded-2xl md:rounded-3xl bg-secondary/60 animate-pulse" />;
     }
     return null;
   }
@@ -61,11 +61,19 @@ export default function HeroBanner() {
   const desktopImg = current.image_desktop || current.image_mobile;
   const mobileImg  = current.image_mobile  || current.image_desktop;
 
-  // Proporções idênticas ao preview do admin:
-  // mobile  → aspect-[3/1]  (900 × 300 px)
-  // desktop → md:aspect-[5/1] (1600 × 320 px)
   return (
-    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl w-full aspect-[3/1] md:aspect-[5/1]">
+    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl w-full">
+      {/* Phantom: invisible image that sets the container height to the natural image ratio */}
+      <picture aria-hidden="true">
+        <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1600, q: 5 })} />
+        <img
+          src={imgUrl(mobileImg, { w: 900, q: 5 })}
+          alt=""
+          className="w-full h-auto block opacity-0 pointer-events-none select-none"
+          aria-hidden="true"
+        />
+      </picture>
+
       <AnimatePresence mode="sync">
         <motion.div
           key={index}
@@ -103,7 +111,7 @@ export default function HeroBanner() {
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="eager"
-                fetchpriority="high"
+                fetchPriority="high"
               />
             </picture>
           )}

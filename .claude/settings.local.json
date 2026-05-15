@@ -25,7 +25,12 @@
       "Read(//c/Users/Rogério Pimentel/.claude/projects/c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors/memory/**)",
       "Bash(git rm *)",
       "Bash(git reset *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__get_project",
+      "mcp__claude_ai_Vercel__get_deployment_build_logs",
+      "mcp__claude_ai_Vercel__get_deployment"
     ],
     "additionalDirectories": [
       "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory"

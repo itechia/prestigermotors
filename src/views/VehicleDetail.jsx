@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/api/supabaseClient";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
   ArrowLeft, Share2, MessageCircle,
@@ -40,8 +39,10 @@ export default function VehicleDetail() {
   const [fsSlide, setFsSlide] = useState(null);
   const autoOpenedRef = useRef(false);
 
-  // Always start at the top when opening a vehicle
+  // Always start at the top and reset gallery when opening a vehicle
   useEffect(() => {
+    setActiveImage(0);
+    setThumbOffset(0);
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [id]);
 
@@ -178,12 +179,7 @@ export default function VehicleDetail() {
       <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
-          <motion.div
-            key={activeImage}
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-secondary"
-          >
+          <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-secondary">
             {showingEmbed ? (
               <>
                 <iframe
@@ -256,7 +252,7 @@ export default function VehicleDetail() {
                 </button>
               </>
             )}
-          </motion.div>
+          </div>
 
           {/* Thumbnails */}
           {totalSlides > 1 && (
@@ -273,7 +269,7 @@ export default function VehicleDetail() {
                         onClick={() => setActiveImage(images.length)}
                         className={cn(
                           "flex-shrink-0 w-14 aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                          activeImage === 0
+                          activeImage === images.length
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-transparent bg-secondary text-muted-foreground opacity-60"
                         )}
@@ -325,7 +321,7 @@ export default function VehicleDetail() {
                         onClick={() => setActiveImage(images.length)}
                         className={cn(
                           "aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                          activeImage === 0
+                          activeImage === images.length
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
                         )}
