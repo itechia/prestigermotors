@@ -164,22 +164,22 @@ export default function VehicleDetail() {
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-24 md:pb-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-8 pb-24 md:pb-8">
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-3 md:mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> Voltar
       </button>
 
       <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
-        {/* Gallery */}
-        <div className="lg:col-span-3 space-y-3">
+        {/* Gallery — segunda no mobile, primeira no desktop */}
+        <div className="order-last lg:order-first lg:col-span-3 space-y-3">
           <motion.div
             key={activeImage}
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
+            className="relative aspect-video sm:aspect-[16/11] rounded-3xl overflow-hidden bg-secondary"
           >
             {showingEmbed ? (
               <>
@@ -205,7 +205,7 @@ export default function VehicleDetail() {
                 src={imgUrl(images[imageIndex], { w: 900, q: 82 })}
                 onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imageIndex]; }}
                 alt={vehicle.model}
-                className="w-full h-full object-cover cursor-zoom-in"
+                className="w-full h-full object-contain cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
                 decoding="async"
               />
@@ -357,8 +357,8 @@ export default function VehicleDetail() {
           )}
         </div>
 
-        {/* Info */}
-        <div className="lg:col-span-2 space-y-5">
+        {/* Info — primeira no mobile, segunda no desktop */}
+        <div className="order-first lg:order-last lg:col-span-2 space-y-5">
           <div>
             <h1 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl leading-tight">
               {vehicle.brand} {vehicle.model}
