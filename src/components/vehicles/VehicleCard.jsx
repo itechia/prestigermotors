@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect, memo } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gauge, Calendar, Flame, MessageCircle, RotateCw } from "lucide-react";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
@@ -45,7 +47,7 @@ function VehicleCard({ vehicle, index = 0 }) {
 
         {/* ── Área de imagem ───────────────────────────── */}
         <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-          <Link to={detailHref} className="block w-full h-full">
+          <Link href={detailHref} className="block w-full h-full">
             {hasEmbed ? (
               /* 360° embed como capa — pointer-events-none para o clique ir para o Link */
               <iframe
@@ -104,7 +106,7 @@ function VehicleCard({ vehicle, index = 0 }) {
           )}
         </div>
 
-        <Link to={detailHref} className="p-4 space-y-3 flex flex-col flex-1">
+        <Link href={detailHref} className="p-4 space-y-3 flex flex-col flex-1">
           <div>
             <h3 className="font-display font-bold text-base leading-tight truncate">
               {vehicle.brand} {vehicle.model}

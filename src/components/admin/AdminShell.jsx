@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState, useEffect } from "react";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Car,
@@ -28,8 +31,34 @@ const NAV = [
 
 const STORAGE_KEY = "admin_sidebar_collapsed";
 
+function NavItem({ item, collapsed, onClick }) {
+  const pathname = usePathname();
+  const Icon = item.icon;
+  const isActive = item.end
+    ? pathname === item.to
+    : pathname.startsWith(item.to);
+
+  return (
+    <Link
+      href={item.to}
+      title={collapsed ? item.label : undefined}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 h-10 rounded-lg text-[13px] font-medium transition-colors",
+        collapsed ? "justify-center px-0" : "px-3",
+        isActive
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+      )}
+    >
+      <Icon className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
+      {!collapsed && <span>{item.label}</span>}
+    </Link>
+  );
+}
+
 export default function AdminShell({ children, title, subtitle, actions }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const settings = useStoreSettings();
 
   const [collapsed, setCollapsed] = useState(() => {
@@ -37,7 +66,6 @@ export default function AdminShell({ children, title, subtitle, actions }) {
     return window.localStorage.getItem(STORAGE_KEY) === "1";
   });
 
-  // On mobile, sidebar is always hidden (uses bottom nav instead)
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -47,7 +75,7 @@ export default function AdminShell({ children, title, subtitle, actions }) {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
-    navigate("/admin/login");
+    router.push("/admin/login");
   };
 
   const sidebarW = collapsed ? "w-[72px]" : "w-[260px]";
@@ -110,29 +138,9 @@ export default function AdminShell({ children, title, subtitle, actions }) {
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            {NAV.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  title={collapsed ? item.label : undefined}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-3 h-10 rounded-lg text-[13px] font-medium transition-colors",
-                      collapsed ? "justify-center px-0" : "px-3",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-                    )
-                  }
-                >
-                  <Icon className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
-                  {!collapsed && <span>{item.label}</span>}
-                </NavLink>
-              );
-            })}
+            {NAV.map((item) => (
+              <NavItem key={item.to} item={item} collapsed={collapsed} />
+            ))}
           </nav>
 
           {/* Bottom controls */}
@@ -189,28 +197,14 @@ export default function AdminShell({ children, title, subtitle, actions }) {
                 </span>
               </div>
               <nav className="flex-1 px-3 py-4 space-y-1">
-                {NAV.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.end}
-                      onClick={() => setMobileOpen(false)}
-                      className={({ isActive }) =>
-                        cn(
-                          "flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] font-medium transition-colors",
-                          isActive
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-                        )
-                      }
-                    >
-                      <Icon className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  );
-                })}
+                {NAV.map((item) => (
+                  <NavItem
+                    key={item.to}
+                    item={item}
+                    collapsed={false}
+                    onClick={() => setMobileOpen(false)}
+                  />
+                ))}
               </nav>
               <div className="px-3 py-3 border-t border-border/40 space-y-1.5">
                 <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 h-9 px-3 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors">
@@ -241,7 +235,7 @@ export default function AdminShell({ children, title, subtitle, actions }) {
 
               {/* Breadcrumb-style title */}
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0">
-                <Link to="/admin" className="hover:text-foreground transition-colors shrink-0">
+                <Link href="/admin" className="hover:text-foreground transition-colors shrink-0">
                   Painel
                 </Link>
                 {title && (

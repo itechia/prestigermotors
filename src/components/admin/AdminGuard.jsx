@@ -1,8 +1,10 @@
+'use client';
+
 import React from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Home, LogIn } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 export default function AdminGuard({ children }) {
   const { isAuthenticated, isLoadingAuth } = useAuth();
@@ -27,12 +29,12 @@ export default function AdminGuard({ children }) {
         </p>
         <div className="flex gap-3 justify-center mt-6">
           <Button asChild variant="outline" className="rounded-full h-12 px-6 font-semibold">
-            <Link to="/">
+            <Link href="/">
               <Home className="w-4 h-4 mr-2" /> Voltar ao site
             </Link>
           </Button>
           <Button asChild className="rounded-full h-12 px-6 font-semibold">
-            <Link to="/admin/login">
+            <Link href="/admin/login">
               <LogIn className="w-4 h-4 mr-2" /> Entrar
             </Link>
           </Button>

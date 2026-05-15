@@ -1,11 +1,13 @@
+'use client';
+
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { usePathname } from "next/navigation";
 import { Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PageNotFound() {
-  const location = useLocation();
-  const pageName = location.pathname.substring(1);
+  const pathname = usePathname();
+  const pageName = pathname.substring(1);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">

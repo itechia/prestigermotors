@@ -1,5 +1,8 @@
+'use client';
+
 import React, { Suspense } from "react";
-import { Outlet, useLocation, Link } from "react-router-dom";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Car, Tag, Home, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
@@ -11,11 +14,11 @@ import BrandHead from "@/components/BrandHead";
 import SiteFooter from "@/components/SiteFooter";
 import { getStoreNameFontStyle } from "@/lib/fonts";
 
-export default function Layout() {
-  const location = useLocation();
+export default function Layout({ children }) {
+  const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const settings = useStoreSettings();
-  const isAdminRoute = location.pathname.startsWith("/admin");
+  const isAdminRoute = pathname.startsWith("/admin");
 
   const { data: me } = useQuery({
     queryKey: ["me"],
@@ -28,7 +31,6 @@ export default function Layout() {
 
   const isAdmin = me?.role === "admin";
 
-  // App é público. Admin vê aba extra apenas se estiver logado como admin.
   const navItems = [
     { to: "/", label: "Catálogo", icon: Home },
     { to: "/vender", label: "Vender", icon: Tag },
@@ -36,7 +38,7 @@ export default function Layout() {
   if (isAdmin) navItems.push({ to: "/admin", label: "Admin", icon: LayoutGrid });
 
   const isActive = (to) =>
-    to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+    to === "/" ? pathname === "/" : pathname.startsWith(to);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -44,7 +46,7 @@ export default function Layout() {
       {/* Top Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50 pt-safe">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-          <Link to="/" className="flex items-center gap-2 group min-w-0">
+          <Link href="/" className="flex items-center gap-2 group min-w-0">
             {settings.logo_url ? (
               <img
                 src={settings.logo_url}
@@ -74,7 +76,7 @@ export default function Layout() {
               return (
                 <Link
                   key={item.to}
-                  to={item.to}
+                  href={item.to}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2",
                     active
@@ -102,7 +104,7 @@ export default function Layout() {
             <div className="w-8 h-8 border-4 border-secondary border-t-primary rounded-full animate-spin"></div>
           </div>
         }>
-          <Outlet />
+          {children}
         </Suspense>
       </main>
 
@@ -126,7 +128,7 @@ export default function Layout() {
               return (
                 <Link
                   key={item.to}
-                  to={item.to}
+                  href={item.to}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 transition-colors",
                     active ? "text-primary" : "text-muted-foreground"

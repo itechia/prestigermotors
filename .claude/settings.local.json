@@ -17,7 +17,15 @@
       "Bash(npx vercel *)",
       "Bash(xargs grep *)",
       "Bash(npm list *)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(xargs sed *)",
+      "Bash(grep -v \"//.*window\")",
+      "Bash(rm src/App.jsx)",
+      "Bash(npm uninstall *)",
+      "Read(//c/Users/Rogério Pimentel/.claude/projects/c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors/memory/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory"
     ]
   }
 }

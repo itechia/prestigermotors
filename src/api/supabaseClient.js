@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl     = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl     = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
@@ -16,8 +16,8 @@ export const supabase = isSupabaseConfigured
 // ─────────────────────────────────────────────────────────────
 function buildLocalClient() {
   const SESSION_KEY  = 'pm_local_session';
-  const ADMIN_EMAIL  = import.meta.env.VITE_LOCAL_ADMIN_EMAIL    || 'admin@prestiger.com';
-  const ADMIN_PASS   = import.meta.env.VITE_LOCAL_ADMIN_PASSWORD || 'admin123';
+  const ADMIN_EMAIL  = process.env.NEXT_PUBLIC_LOCAL_ADMIN_EMAIL    || 'admin@prestiger.com';
+  const ADMIN_PASS   = process.env.NEXT_PUBLIC_LOCAL_ADMIN_PASSWORD || 'admin123';
 
   // ── Utilitários ────────────────────────────────────────────
   const uid  = () => crypto.randomUUID();

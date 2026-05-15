@@ -1,7 +1,7 @@
 // Transforms Supabase Storage URLs to use the image transformation API.
 // Supabase serves resized/compressed images via /storage/v1/render/image/.
 // Non-Supabase URLs pass through unchanged — no breakage on external images.
-const BASE = import.meta.env.VITE_SUPABASE_URL ?? "";
+const BASE = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const OBJ  = "/storage/v1/object/public/";
 const REND = "/storage/v1/render/image/public/";
 
