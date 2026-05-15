@@ -15,7 +15,9 @@
       "Bash(node -e ' *)",
       "Read(//tmp/**)",
       "Bash(npx vercel *)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(npm list *)",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }

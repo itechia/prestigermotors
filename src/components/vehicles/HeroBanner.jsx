@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { cn } from "@/lib/utils";
+import { imgUrl } from "@/lib/imgUrl";
 
 export default function HeroBanner() {
   const s = useStoreSettings();
@@ -73,14 +74,16 @@ export default function HeroBanner() {
                   className="absolute inset-0 block"
                 >
                   <picture>
-                    {desktopImg && mobileImg && desktopImg !== mobileImg && (
-                      <source media="(min-width: 768px)" srcSet={desktopImg} />
+                    {desktopImg && (
+                      <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1400, q: 82 })} />
                     )}
                     <img
-                      src={mobileImg || desktopImg}
+                      src={imgUrl(mobileImg || desktopImg, { w: 800, q: 75 })}
+                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = mobileImg || desktopImg; }}
                       alt=""
                       className="absolute inset-0 w-full h-full object-cover"
                       loading="eager"
+                      fetchpriority="high"
                     />
                   </picture>
                 </a>

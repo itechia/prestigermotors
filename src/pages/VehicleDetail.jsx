@@ -22,6 +22,7 @@ import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
+import { imgUrl } from "@/lib/imgUrl";
 
 export default function VehicleDetail() {
   const { id } = useParams();
@@ -76,9 +77,9 @@ export default function VehicleDetail() {
       if (error && error.code !== "PGRST116") throw error;
       return data ?? null;
     },
-    // staleTime 0: se o cache tiver dados leves do catálogo, mostra imediatamente
-    // e revalida em background para preencher description/features
-    staleTime: 0,
+    // staleTime curto: mostra dados do catálogo imediatamente enquanto refaz
+    // fetch em background para preencher description/features
+    staleTime: 15 * 1000,
   });
 
   if (isLoading) {
@@ -163,7 +164,7 @@ export default function VehicleDetail() {
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-24 md:pb-8">
       <button
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
@@ -171,7 +172,7 @@ export default function VehicleDetail() {
         <ArrowLeft className="w-4 h-4" /> Voltar
       </button>
 
-      <div className="grid lg:grid-cols-5 gap-8">
+      <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
           <motion.div
@@ -201,10 +202,12 @@ export default function VehicleDetail() {
               </>
             ) : (
               <img
-                src={images[imageIndex]}
+                src={imgUrl(images[imageIndex], { w: 900, q: 82 })}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imageIndex]; }}
                 alt={vehicle.model}
                 className="w-full h-full object-cover cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
+                decoding="async"
               />
             )}
 
@@ -248,72 +251,116 @@ export default function VehicleDetail() {
             )}
           </motion.div>
 
-          {/* Thumbnails — grade fixa de 5 com botões de navegação */}
+          {/* Thumbnails */}
           {totalSlides > 1 && (
-            <div className="flex items-center gap-2">
-              {/* Seta esquerda */}
-              <button
-                onClick={() => setThumbOffset(o => Math.max(0, o - 1))}
-                disabled={thumbOffset === 0}
-                className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center transition-opacity disabled:opacity-20"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {/* Grade fixa de 5 colunas */}
-              <div className="grid grid-cols-5 gap-2 flex-1">
-                {Array.from({ length: THUMB_COLS }).map((_, col) => {
-                  const slideIdx = thumbOffset + col;
-                  if (slideIdx >= totalSlides) {
-                    return <div key={col} className="aspect-square" />;
-                  }
-                  const isEmbed = hasEmbed && slideIdx === 0;
-                  const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
-                  return isEmbed ? (
-                    <button
-                      key="embed"
-                      onClick={() => setActiveImage(0)}
-                      className={cn(
-                        "aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                        activeImage === 0
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
-                      )}
-                    >
-                      <RotateCw className="w-4 h-4" />
-                      <span className="text-[9px] font-bold tracking-wider">360°</span>
-                    </button>
-                  ) : (
-                    <button
-                      key={imgIdx}
-                      onClick={() => setActiveImage(slideIdx)}
-                      className={cn(
-                        "aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                        activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
-                      )}
-                    >
-                      <img src={images[imgIdx]} alt="" className="w-full h-full object-cover" />
-                    </button>
-                  );
-                })}
+            <>
+              {/* Mobile: tira horizontal com scroll */}
+              <div className="sm:hidden overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2 pb-1">
+                  {Array.from({ length: totalSlides }).map((_, slideIdx) => {
+                    const isEmbed = hasEmbed && slideIdx === 0;
+                    const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
+                    return isEmbed ? (
+                      <button
+                        key="embed-sm"
+                        onClick={() => setActiveImage(0)}
+                        className={cn(
+                          "flex-shrink-0 w-14 aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
+                          activeImage === 0
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-transparent bg-secondary text-muted-foreground opacity-60"
+                        )}
+                      >
+                        <RotateCw className="w-4 h-4" />
+                        <span className="text-[9px] font-bold tracking-wider">360°</span>
+                      </button>
+                    ) : (
+                      <button
+                        key={slideIdx}
+                        onClick={() => setActiveImage(slideIdx)}
+                        className={cn(
+                          "flex-shrink-0 w-14 aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60"
+                        )}
+                      >
+                        <img
+                        src={imgUrl(images[imgIdx], { w: 112, h: 112, q: 60 })}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imgIdx]; }}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Seta direita */}
-              <button
-                onClick={() => setThumbOffset(o => Math.min(totalSlides - THUMB_COLS, o + 1))}
-                disabled={thumbOffset + THUMB_COLS >= totalSlides}
-                className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center transition-opacity disabled:opacity-20"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+              {/* Desktop: grade fixa de 5 colunas com setas */}
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  onClick={() => setThumbOffset(o => Math.max(0, o - 1))}
+                  disabled={thumbOffset === 0}
+                  className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center transition-opacity disabled:opacity-20"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="grid grid-cols-5 gap-2 flex-1">
+                  {Array.from({ length: THUMB_COLS }).map((_, col) => {
+                    const slideIdx = thumbOffset + col;
+                    if (slideIdx >= totalSlides) {
+                      return <div key={col} className="aspect-square" />;
+                    }
+                    const isEmbed = hasEmbed && slideIdx === 0;
+                    const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
+                    return isEmbed ? (
+                      <button
+                        key="embed"
+                        onClick={() => setActiveImage(0)}
+                        className={cn(
+                          "aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
+                          activeImage === 0
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
+                        )}
+                      >
+                        <RotateCw className="w-4 h-4" />
+                        <span className="text-[9px] font-bold tracking-wider">360°</span>
+                      </button>
+                    ) : (
+                      <button
+                        key={imgIdx}
+                        onClick={() => setActiveImage(slideIdx)}
+                        className={cn(
+                          "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
+                        )}
+                      >
+                        <img
+                          src={imgUrl(images[imgIdx], { w: 120, h: 120, q: 60 })}
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imgIdx]; }}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setThumbOffset(o => Math.min(totalSlides - THUMB_COLS, o + 1))}
+                  disabled={thumbOffset + THUMB_COLS >= totalSlides}
+                  className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center transition-opacity disabled:opacity-20"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </>
           )}
         </div>
 
         {/* Info */}
         <div className="lg:col-span-2 space-y-5">
           <div>
-            <h1 className="font-display font-bold text-3xl md:text-4xl leading-tight">
+            <h1 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl leading-tight">
               {vehicle.brand} {vehicle.model}
             </h1>
             <p className="text-muted-foreground mt-1">{vehicle.version}</p>
@@ -328,7 +375,7 @@ export default function VehicleDetail() {
             {/* Price: De / Por */}
             <div className="mt-5 pb-5 border-b border-border">
               {hasDiscount && (
-                <div className="flex items-center gap-2 mb-1 text-sm">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1 text-sm">
                   <span className="text-muted-foreground">De</span>
                   <span className="text-muted-foreground line-through">{formatCurrency(vehicle.price_old)}</span>
                   <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase">
@@ -339,7 +386,7 @@ export default function VehicleDetail() {
               {hasDiscount && (
                 <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Por</div>
               )}
-              <div className="font-display font-bold text-4xl md:text-5xl price-gradient leading-none">
+              <div className="font-display font-bold text-3xl sm:text-4xl md:text-5xl price-gradient leading-none">
                 {formatCurrency(vehicle.price)}
               </div>
               <div className="text-sm text-muted-foreground mt-2">
@@ -457,7 +504,10 @@ export default function VehicleDetail() {
 
       {/* Sticky mobile CTA */}
       {vehicle.status !== "vendido" && (
-        <div className="md:hidden fixed bottom-16 left-0 right-0 z-30 bg-background/95 backdrop-blur-md border-t border-border p-3">
+        <div
+          className="md:hidden fixed left-0 right-0 z-30 bg-background/95 backdrop-blur-md border-t border-border p-3"
+          style={{ bottom: "calc(4rem + var(--safe-bottom, 0px))" }}
+        >
           <button
             type="button"
             onClick={handleInterestClick}
@@ -480,7 +530,7 @@ export default function VehicleDetail() {
         <FullscreenViewer
           slides={[
             ...(hasEmbed ? [{ type: "embed", html: vehicle.embed_html }] : []),
-            ...images.map(src => ({ type: "image", src })),
+            ...images.map(src => ({ type: "image", src: imgUrl(src, { w: 1400, q: 88 }) || src, srcFallback: src })),
           ]}
           initialSlide={fsSlide}
           onClose={() => setFsSlide(null)}
@@ -662,6 +712,7 @@ function FullscreenViewer({ slides, initialSlide, onClose }) {
         >
           <img
             src={current.src}
+            onError={(e) => { e.currentTarget.onerror = null; if (current.srcFallback) e.currentTarget.src = current.srcFallback; }}
             alt={`Imagem ${idx + 1}`}
             draggable={false}
             onDoubleClick={onDblClick}
