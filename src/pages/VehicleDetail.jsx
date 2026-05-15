@@ -204,7 +204,8 @@ export default function VehicleDetail() {
               <img
                 src={images[imageIndex]}
                 alt={vehicle.model}
-                className="w-full h-auto block cursor-zoom-in"
+                className="w-full block cursor-zoom-in object-cover object-bottom"
+                style={{ height: "auto", maxHeight: "70vh" }}
                 onClick={() => setFsSlide(activeImage)}
                 decoding="async"
               />

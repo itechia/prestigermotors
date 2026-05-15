@@ -50,11 +50,15 @@ export default function HeroBanner() {
   const current = slides.length > 0 ? slides[index] : null;
   const desktopImg = current ? (current.image_desktop || current.image_mobile) : null;
   const mobileImg = current ? (current.image_mobile || current.image_desktop) : null;
+  // Se não há imagem mobile dedicada, o admin só cadastrou imagem 5:1 (desktop).
+  // Nesse caso usa aspect-[5/1] no mobile também para não cortar. Se há imagem
+  // mobile separada (3:1), usa aspect-[3/1] no mobile conforme especificado no admin.
+  const hasMobileImg = current
+    ? Boolean(current.image_mobile && current.image_mobile !== current.image_desktop)
+    : false;
 
-  // aspect-[3/1] mobile = proporção 3:1 (conforme admin: 900×300 px)
-  // md:aspect-[5/1] desktop = proporção 5:1 (conforme admin: 1600×320 px)
   return (
-    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full aspect-[3/1] md:aspect-[5/1]">
+    <div className={`relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full md:aspect-[5/1] ${hasMobileImg ? "aspect-[3/1]" : "aspect-[5/1]"}`}>
       {current && (
         <>
           <AnimatePresence mode="sync">
