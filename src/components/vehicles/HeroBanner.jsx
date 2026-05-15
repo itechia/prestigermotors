@@ -51,12 +51,19 @@ export default function HeroBanner() {
   const desktopImg = current ? (current.image_desktop || current.image_mobile) : null;
   const mobileImg = current ? (current.image_mobile || current.image_desktop) : null;
 
-  // Container always renders with fixed height — prevents layout shift while loading
-  // and during slide transitions. bg-secondary acts as placeholder skeleton.
   return (
-    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full aspect-[5/2] sm:aspect-[3/1] md:aspect-auto md:h-56 lg:h-64 xl:h-72">
+    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full">
       {current && (
         <>
+          {/* Invisible spacer — sizes the container to the natural image height */}
+          <img
+            src={imgUrl(mobileImg || desktopImg, { w: 800, q: 75 })}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-auto block invisible pointer-events-none select-none"
+            loading="eager"
+          />
+
           <AnimatePresence mode="sync">
             <motion.div
               key={index}
@@ -81,7 +88,7 @@ export default function HeroBanner() {
                       src={imgUrl(mobileImg || desktopImg, { w: 800, q: 75 })}
                       onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = mobileImg || desktopImg; }}
                       alt=""
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className="w-full h-full object-cover"
                       loading="eager"
                       fetchpriority="high"
                     />
@@ -90,13 +97,15 @@ export default function HeroBanner() {
               ) : (
                 <picture>
                   {desktopImg && mobileImg && desktopImg !== mobileImg && (
-                    <source media="(min-width: 768px)" srcSet={desktopImg} />
+                    <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1400, q: 82 })} />
                   )}
                   <img
-                    src={mobileImg || desktopImg}
+                    src={imgUrl(mobileImg || desktopImg, { w: 800, q: 75 })}
+                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = mobileImg || desktopImg; }}
                     alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="w-full h-full object-cover"
                     loading="eager"
+                    fetchpriority="high"
                   />
                 </picture>
               )}
