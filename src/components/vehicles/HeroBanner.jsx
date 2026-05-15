@@ -51,19 +51,12 @@ export default function HeroBanner() {
   const desktopImg = current ? (current.image_desktop || current.image_mobile) : null;
   const mobileImg = current ? (current.image_mobile || current.image_desktop) : null;
 
+  // aspect-[3/1] mobile = proporção 3:1 (conforme admin: 900×300 px)
+  // md:aspect-[5/1] desktop = proporção 5:1 (conforme admin: 1600×320 px)
   return (
-    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full">
+    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary w-full aspect-[3/1] md:aspect-[5/1]">
       {current && (
         <>
-          {/* Invisible spacer — sizes the container to the natural image height */}
-          <img
-            src={imgUrl(mobileImg || desktopImg, { w: 800, q: 75 })}
-            alt=""
-            aria-hidden="true"
-            className="w-full h-auto block invisible pointer-events-none select-none"
-            loading="eager"
-          />
-
           <AnimatePresence mode="sync">
             <motion.div
               key={index}
@@ -82,13 +75,13 @@ export default function HeroBanner() {
                 >
                   <picture>
                     {desktopImg && (
-                      <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1400, q: 82 })} />
+                      <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1600, q: 82 })} />
                     )}
                     <img
-                      src={imgUrl(mobileImg || desktopImg, { w: 800, q: 75 })}
+                      src={imgUrl(mobileImg || desktopImg, { w: 900, q: 80 })}
                       onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = mobileImg || desktopImg; }}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-cover"
                       loading="eager"
                       fetchpriority="high"
                     />
@@ -97,13 +90,13 @@ export default function HeroBanner() {
               ) : (
                 <picture>
                   {desktopImg && mobileImg && desktopImg !== mobileImg && (
-                    <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1400, q: 82 })} />
+                    <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1600, q: 82 })} />
                   )}
                   <img
-                    src={imgUrl(mobileImg || desktopImg, { w: 800, q: 75 })}
+                    src={imgUrl(mobileImg || desktopImg, { w: 900, q: 80 })}
                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = mobileImg || desktopImg; }}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                     loading="eager"
                     fetchpriority="high"
                   />
