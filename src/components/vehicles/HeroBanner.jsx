@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useStoreSettings } from "@/lib/useStoreSettings";
-import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import { cn } from "@/lib/utils";
-import { imgUrl } from "@/lib/imgUrl";
 
 export default function HeroBanner() {
   const s = useStoreSettings();
@@ -48,72 +46,53 @@ export default function HeroBanner() {
     startTimer();
   };
 
-  // Settings ainda carregando: mostra skeleton para evitar layout shift
-  const settingsLoaded = s !== DEFAULT_SETTINGS;
-  if (slides.length === 0) {
-    if (!settingsLoaded) {
-      return <div className="w-full aspect-[3/1] md:aspect-[4/1] rounded-2xl md:rounded-3xl bg-secondary/60 animate-pulse" />;
-    }
-    return null;
-  }
+  if (slides.length === 0) return null;
 
   const current = slides[index];
   const desktopImg = current.image_desktop || current.image_mobile;
   const mobileImg  = current.image_mobile  || current.image_desktop;
 
-  return (
-    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl w-full">
-      {/* Phantom: invisible image that sets the container height to the natural image ratio */}
-      <picture aria-hidden="true">
-        <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1600, q: 5 })} />
+  const Inner = (
+    <>
+      {/* Mobile: altura natural, sem corte */}
+      {mobileImg && (
         <img
-          src={imgUrl(mobileImg, { w: 900, q: 5 })}
+          src={mobileImg}
           alt=""
-          className="w-full h-auto block opacity-0 pointer-events-none select-none"
-          aria-hidden="true"
+          className="block md:hidden w-full h-auto max-h-56 object-cover"
+          loading="eager"
         />
-      </picture>
+      )}
+      {/* Desktop: altura fixa evita layout shift */}
+      {desktopImg && (
+        <div className="hidden md:block w-full h-56 lg:h-64 bg-secondary">
+          <img
+            src={desktopImg}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="eager"
+          />
+        </div>
+      )}
+    </>
+  );
 
-      <AnimatePresence mode="sync">
+  return (
+    <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-secondary">
+      <AnimatePresence mode="wait">
         <motion.div
           key={index}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="absolute inset-0"
         >
           {current.link ? (
-            <a
-              href={current.link}
-              target="_blank"
-              rel="noreferrer"
-              className="absolute inset-0 block"
-            >
-              <picture>
-                <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1600, q: 82 })} />
-                <img
-                  src={imgUrl(mobileImg, { w: 900, q: 80 })}
-                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = mobileImg; }}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="eager"
-                  fetchPriority="high"
-                />
-              </picture>
+            <a href={current.link} target="_blank" rel="noreferrer" className="block">
+              {Inner}
             </a>
           ) : (
-            <picture>
-              <source media="(min-width: 768px)" srcSet={imgUrl(desktopImg, { w: 1600, q: 82 })} />
-              <img
-                src={imgUrl(mobileImg, { w: 900, q: 80 })}
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = mobileImg; }}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="eager"
-                fetchPriority="high"
-              />
-            </picture>
+            Inner
           )}
         </motion.div>
       </AnimatePresence>
@@ -136,21 +115,23 @@ export default function HeroBanner() {
           >
             <ChevronRight className="w-4 h-4" />
           </button>
-
-          <div className="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goTo(i)}
-                aria-label={`Ir para slide ${i + 1}`}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  i === index ? "w-6 bg-white" : "w-1.5 bg-white/60 hover:bg-white/80"
-                )}
-              />
-            ))}
-          </div>
         </>
+      )}
+
+      {slides.length > 1 && (
+        <div className="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              aria-label={`Ir para slide ${i + 1}`}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                i === index ? "w-6 bg-white" : "w-1.5 bg-white/60 hover:bg-white/80"
+              )}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

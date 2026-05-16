@@ -23,7 +23,6 @@ import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
-import { imgUrl } from "@/lib/imgUrl";
 
 export default function VehicleDetail() {
   const { id } = useParams();
@@ -179,7 +178,7 @@ export default function VehicleDetail() {
       <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
-          <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-secondary">
+          <div className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-secondary">
             {showingEmbed ? (
               <>
                 <iframe
@@ -201,13 +200,11 @@ export default function VehicleDetail() {
               </>
             ) : (
               <img
-                src={imgUrl(images[imageIndex], { w: 1200, q: 85 })}
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imageIndex]; }}
+                src={images[imageIndex]}
                 alt={vehicle.model}
-                className="w-full h-full object-cover object-center cursor-zoom-in"
+                className="w-full h-full object-cover cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
                 loading="eager"
-                fetchPriority={activeImage === 0 ? "high" : "auto"}
               />
             )}
 
@@ -287,11 +284,10 @@ export default function VehicleDetail() {
                         )}
                       >
                         <img
-                        src={imgUrl(images[imgIdx], { w: 112, h: 112, q: 60 })}
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imgIdx]; }}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
+                          src={images[imgIdx]}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
                       </button>
                     );
                   })}
@@ -339,8 +335,7 @@ export default function VehicleDetail() {
                         )}
                       >
                         <img
-                          src={imgUrl(images[imgIdx], { w: 120, h: 120, q: 60 })}
-                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = images[imgIdx]; }}
+                          src={images[imgIdx]}
                           alt=""
                           className="w-full h-full object-cover"
                         />

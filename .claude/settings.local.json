@@ -30,7 +30,9 @@
       "mcp__claude_ai_Vercel__list_projects",
       "mcp__claude_ai_Vercel__get_project",
       "mcp__claude_ai_Vercel__get_deployment_build_logs",
-      "mcp__claude_ai_Vercel__get_deployment"
+      "mcp__claude_ai_Vercel__get_deployment",
+      "Bash(git ls-tree *)",
+      "Read(//c/Users/Rogério Pimentel/.claude/projects/c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors/d430daf0-ab2b-4c67-83ac-729ecf9947de/tool-results/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory"
