@@ -178,7 +178,16 @@ export default function VehicleDetail() {
       <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
-          <div className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-secondary">
+          {/*
+            Usamos padding-bottom para definir a altura (16:11 = 68.75%).
+            É mais confiável que aspect-ratio em todos os browsers mobile,
+            pois não cria dependência circular com h-full dos filhos.
+            Todos os filhos são absolute inset-0.
+          */}
+          <div
+            className="relative rounded-3xl overflow-hidden bg-secondary"
+            style={{ paddingBottom: "68.75%" }}
+          >
             {showingEmbed ? (
               <>
                 <iframe
@@ -202,7 +211,7 @@ export default function VehicleDetail() {
               <img
                 src={images[imageIndex]}
                 alt={vehicle.model}
-                className="w-full h-full object-cover cursor-zoom-in"
+                className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
                 onClick={() => setFsSlide(activeImage)}
                 loading="eager"
               />
