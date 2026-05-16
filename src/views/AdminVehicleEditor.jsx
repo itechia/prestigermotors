@@ -144,7 +144,7 @@ function Editor() {
   return (
     <div className="pb-20">
       <Link
-        to="/admin/veiculos"
+        href="/admin/veiculos"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Voltar para veículos
