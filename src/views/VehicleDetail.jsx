@@ -35,9 +35,7 @@ export default function VehicleDetail() {
   const [thumbOffset, setThumbOffset] = useState(0);
   const [interestOpen, setInterestOpen] = useState(false);
   const [fsSlide, setFsSlide] = useState(null);
-  const [galleryHeight, setGalleryHeight] = useState(0);
   const autoOpenedRef = useRef(false);
-  const galleryRef = useRef(null);
 
   // Always start at the top and reset gallery when opening a vehicle
   useEffect(() => {
@@ -82,24 +80,6 @@ export default function VehicleDetail() {
     },
     staleTime: 60 * 60 * 1000, // 1 hora — evita troca de imagem por background refetch
   });
-
-  // Calcula altura da galeria em pixels reais via ResizeObserver.
-  // É executado DEPOIS do vehicle carregar, quando galleryRef já está no DOM.
-  // padding-bottom % falha em iOS Safari dentro de CSS Grid — px explícito é
-  // a única solução garantida em todos os browsers móveis.
-  useEffect(() => {
-    const el = galleryRef.current;
-    if (!el) return;
-    const measure = () => {
-      const w = el.getBoundingClientRect().width;
-      if (w > 0) setGalleryHeight(Math.round(w * 11 / 16));
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicle?.id]); // re-executa quando vehicle carrega/troca
 
   if (isLoading) {
     return (
@@ -192,20 +172,10 @@ export default function VehicleDetail() {
         <ArrowLeft className="w-4 h-4" /> Voltar
       </button>
 
-      <div className="grid lg:grid-cols-5 gap-6 lg:gap-8">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-8">
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
-          <div
-            ref={galleryRef}
-            className="relative rounded-3xl overflow-hidden bg-secondary"
-            style={{
-              // Altura em px calculada pelo ResizeObserver (JavaScript puro).
-              // É o único método 100% confiável no iOS Safari dentro de Grid.
-              // Fallback: aspect-ratio CSS enquanto o JS ainda não rodou.
-              height: galleryHeight > 0 ? `${galleryHeight}px` : undefined,
-              aspectRatio: galleryHeight > 0 ? undefined : "16/11",
-            }}
-          >
+          <div className="relative rounded-3xl overflow-hidden bg-secondary aspect-[16/11]">
             {showingEmbed ? (
               <>
                 <iframe
