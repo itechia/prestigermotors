@@ -9,7 +9,7 @@ import {
 } from "@/components/SocialLogos";
 
 const ITEM_CLASS =
-  "w-9 h-9 rounded-xl overflow-hidden hover:scale-110 hover:shadow-md transition-all flex items-center justify-center";
+  "w-9 h-9 rounded-full bg-background border border-border flex items-center justify-center hover:scale-110 hover:shadow-sm transition-all overflow-hidden";
 
 export default function SocialIcons({ className = "" }) {
   const s = useStoreSettings();
@@ -77,7 +77,7 @@ export default function SocialIcons({ className = "" }) {
           {customLogo ? (
             <img src={customLogo} alt={label} className="w-5 h-5 object-contain" />
           ) : (
-            <Icon className="w-9 h-9" />
+            <Icon className="w-5 h-5" />
           )}
         </a>
       ))}
