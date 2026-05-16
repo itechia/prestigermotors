@@ -2,13 +2,6 @@ import React from "react";
 import { SettingsSection, TextAreaField } from "@/components/admin/SettingsField";
 import ArrayFieldEditor from "@/components/admin/ArrayFieldEditor";
 import { Input } from "@/components/ui/input";
-import {
-  InstagramLogo,
-  FacebookLogo,
-  YoutubeLogo,
-  TiktokLogo,
-  WhatsappLogo,
-} from "@/components/SocialLogos";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,7 +10,7 @@ import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
 import { useState } from "react";
 
-function LogoUploader({ value, onChange, FallbackLogo }) {
+function LogoUploader({ value, onChange }) {
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (e) => {
@@ -36,11 +29,11 @@ function LogoUploader({ value, onChange, FallbackLogo }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="relative w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center overflow-hidden">
+      <div className="w-10 h-10 rounded-xl border-2 border-dashed border-border bg-secondary/40 flex items-center justify-center overflow-hidden">
         {value ? (
-          <img src={value} alt="" className="w-7 h-7 object-contain" />
+          <img src={value} alt="" className="w-full h-full object-contain p-1" />
         ) : (
-          <FallbackLogo className="w-5 h-5" />
+          <Upload className="w-4 h-4 text-muted-foreground/40" />
         )}
       </div>
       {value ? (
@@ -51,12 +44,12 @@ function LogoUploader({ value, onChange, FallbackLogo }) {
           onClick={() => onChange("")}
           className="h-8 px-2 text-xs"
         >
-          <X className="w-3 h-3 mr-1" /> Padrão
+          <X className="w-3 h-3 mr-1" /> Remover
         </Button>
       ) : (
         <label className="inline-flex items-center gap-1 text-xs font-medium cursor-pointer text-muted-foreground hover:text-foreground">
           {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-          {uploading ? "Enviando..." : "Logo"}
+          {uploading ? "Enviando..." : "Enviar logo"}
           <input
             type="file"
             accept="image/*"
@@ -72,7 +65,6 @@ function LogoUploader({ value, onChange, FallbackLogo }) {
 
 function SocialRow({
   label,
-  Logo,
   urlValue,
   onUrlChange,
   visibleKey,
@@ -90,7 +82,6 @@ function SocialRow({
           <LogoUploader
             value={form[logoKey]}
             onChange={(v) => update(logoKey, v)}
-            FallbackLogo={Logo}
           />
           <Label className="text-sm font-medium">{label}</Label>
         </div>
@@ -263,12 +254,11 @@ export default function SettingsFooter({ form, update }) {
 
       <SettingsSection
         title="Redes sociais"
-        desc="Use o switch para mostrar/ocultar cada ícone no rodapé. Clique em 'Logo' para enviar uma imagem personalizada (recomendado: PNG quadrado, 64x64 ou maior). O ícone só aparece se o link estiver preenchido."
+        desc="Envie a logo de cada rede social — o ícone só aparece no rodapé se a logo estiver carregada E o link preenchido. Recomendado: PNG quadrado com fundo transparente, 64×64 px ou maior."
       >
         <div className="space-y-3">
           <SocialRow
             label="Instagram"
-            Logo={InstagramLogo}
             urlValue={form.instagram_url}
             onUrlChange={(v) => update("instagram_url", v)}
             visibleKey="social_show_instagram"
@@ -279,7 +269,6 @@ export default function SettingsFooter({ form, update }) {
           />
           <SocialRow
             label="Facebook"
-            Logo={FacebookLogo}
             urlValue={form.facebook_url}
             onUrlChange={(v) => update("facebook_url", v)}
             visibleKey="social_show_facebook"
@@ -290,7 +279,6 @@ export default function SettingsFooter({ form, update }) {
           />
           <SocialRow
             label="YouTube"
-            Logo={YoutubeLogo}
             urlValue={form.youtube_url}
             onUrlChange={(v) => update("youtube_url", v)}
             visibleKey="social_show_youtube"
@@ -301,7 +289,6 @@ export default function SettingsFooter({ form, update }) {
           />
           <SocialRow
             label="TikTok"
-            Logo={TiktokLogo}
             urlValue={form.tiktok_url}
             onUrlChange={(v) => update("tiktok_url", v)}
             visibleKey="social_show_tiktok"
@@ -312,7 +299,6 @@ export default function SettingsFooter({ form, update }) {
           />
           <SocialRow
             label="WhatsApp"
-            Logo={WhatsappLogo}
             urlValue={form.whatsapp_number}
             onUrlChange={(v) => update("whatsapp_number", v)}
             visibleKey="social_show_whatsapp"
