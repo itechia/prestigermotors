@@ -33,7 +33,12 @@
       "mcp__claude_ai_Vercel__get_deployment",
       "Bash(git ls-tree *)",
       "Read(//c/Users/Rogério Pimentel/.claude/projects/c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors/d430daf0-ab2b-4c67-83ac-729ecf9947de/tool-results/**)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" status)",
+      "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" diff)",
+      "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" restore --staged .claude/settings.local.json)",
+      "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" log --oneline -3)",
+      "Bash(git -C 'C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884' commit -m ' *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory"
