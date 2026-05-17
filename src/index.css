@@ -144,6 +144,32 @@
     background-image: none;
   }
 
+  .vehicle-detail-gallery {
+    width: 100%;
+    height: calc((100vw - 2rem) * 0.75);
+    max-height: 520px;
+    flex: none;
+  }
+
+  .vehicle-detail-gallery-media {
+    display: block;
+    max-width: none;
+    object-fit: contain;
+    object-position: center center;
+  }
+
+  @media (min-width: 768px) {
+    .vehicle-detail-gallery {
+      height: auto;
+      aspect-ratio: 16 / 11;
+      max-height: none;
+    }
+
+    .vehicle-detail-gallery-media {
+      object-fit: cover;
+    }
+  }
+
   /* Card entrance — substitui framer-motion no VehicleCard */
   @keyframes card-fade-in {
     from { opacity: 0; transform: translateY(12px); }

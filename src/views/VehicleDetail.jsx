@@ -175,8 +175,8 @@ export default function VehicleDetail() {
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-8">
         {/* Gallery */}
-        <div className="lg:col-span-3 space-y-3">
-          <div className="relative rounded-3xl overflow-hidden bg-secondary aspect-[4/3] md:aspect-[16/11]">
+        <div className="lg:col-span-3 space-y-3 min-w-0">
+          <div className="vehicle-detail-gallery relative rounded-3xl overflow-hidden bg-secondary">
             {showingEmbed ? (
               <>
                 <iframe
@@ -185,7 +185,7 @@ export default function VehicleDetail() {
                   title={`${vehicle.brand} ${vehicle.model} 360°`}
                   sandbox="allow-scripts allow-same-origin"
                   scrolling="no"
-                  className="absolute inset-0 w-full h-full border-0 block"
+                  className="vehicle-detail-gallery-media absolute inset-0 w-full h-full border-0 block"
                 />
                 <button
                   onClick={() => setFsSlide(activeImage)}
@@ -200,7 +200,7 @@ export default function VehicleDetail() {
               <img
                 src={galleryImage}
                 alt={vehicle.model}
-                className="absolute inset-0 w-full h-full object-contain md:object-cover cursor-zoom-in"
+                className="vehicle-detail-gallery-media absolute inset-0 w-full h-full cursor-zoom-in"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = images[imageIndex];
