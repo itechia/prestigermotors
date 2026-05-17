@@ -19,6 +19,7 @@ import { getVehicleMeta } from "@/lib/vehicleMeta";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { useTaxonomies } from "@/lib/useTaxonomies";
 import { buildResolvers } from "@/lib/taxLabels";
+import { imgUrl } from "@/lib/imgUrl";
 import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
@@ -105,7 +106,6 @@ export default function VehicleDetail() {
   const images = vehicle.images?.length > 0
     ? vehicle.images
     : ["https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80"];
-
   const hasEmbed = Boolean(vehicle.embed_html?.trim());
 
   const meta = getVehicleMeta(vehicle);
@@ -160,6 +160,7 @@ export default function VehicleDetail() {
   const totalSlides = images.length + (hasEmbed ? 1 : 0);
   const showingEmbed = hasEmbed && activeImage === images.length;
   const imageIndex = activeImage; // imagens estão nos índices 0..N-1
+  const galleryImage = imgUrl(images[imageIndex], { w: 1200, q: 85 });
   const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
@@ -175,7 +176,7 @@ export default function VehicleDetail() {
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-8">
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3">
-          <div className="relative rounded-3xl overflow-hidden bg-secondary aspect-[16/11]">
+          <div className="relative rounded-3xl overflow-hidden bg-secondary aspect-[4/3] md:aspect-[16/11]">
             {showingEmbed ? (
               <>
                 <iframe
@@ -197,11 +198,16 @@ export default function VehicleDetail() {
               </>
             ) : (
               <img
-                src={images[imageIndex]}
+                src={galleryImage}
                 alt={vehicle.model}
-                className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
+                className="absolute inset-0 w-full h-full object-contain md:object-cover cursor-zoom-in"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = images[imageIndex];
+                }}
                 onClick={() => setFsSlide(activeImage)}
                 loading="eager"
+                decoding="async"
               />
             )}
 
