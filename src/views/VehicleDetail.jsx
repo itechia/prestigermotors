@@ -163,7 +163,7 @@ export default function VehicleDetail() {
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-8 pb-24 md:pb-8">
+    <div className="vehicle-detail-page w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-8 pb-24 md:pb-8 overflow-x-hidden">
       <button
         onClick={() => router.back()}
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-3 md:mb-6 transition-colors"
@@ -171,7 +171,7 @@ export default function VehicleDetail() {
         <ArrowLeft className="w-4 h-4" /> Voltar
       </button>
 
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-8">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-8 min-w-0 max-w-full">
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3 min-w-0">
           <div className="vehicle-detail-gallery relative rounded-3xl overflow-hidden bg-secondary">
@@ -353,7 +353,7 @@ export default function VehicleDetail() {
         </div>
 
         {/* Info */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-5 min-w-0">
           <div>
             <h1 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl leading-tight">
               {vehicle.brand} {vehicle.model}
@@ -391,11 +391,11 @@ export default function VehicleDetail() {
           </div>
 
           {meta?.lowStock && vehicle.status === "disponivel" && (
-            <div className="flex items-start gap-3 p-3 rounded-2xl bg-orange-50 border border-orange-200">
+            <div className="flex items-start gap-3 p-3 rounded-2xl bg-orange-50 border border-orange-200 min-w-0 overflow-hidden">
               <Flame className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <div className="font-semibold text-orange-900">Última unidade disponível</div>
-                <div className="text-orange-800 text-xs mt-0.5">Este é o único exemplar deste modelo no nosso estoque.</div>
+              <div className="text-sm min-w-0">
+                <div className="font-semibold text-orange-900 break-words">Última unidade disponível</div>
+                <div className="text-orange-800 text-xs mt-0.5 break-words">Este é o único exemplar deste modelo no nosso estoque.</div>
               </div>
             </div>
           )}
@@ -412,18 +412,18 @@ export default function VehicleDetail() {
 
           {/* CTA — hidden when vehicle is sold */}
           {vehicle.status !== "vendido" ? (
-            <div className="pt-2">
+            <div className="hidden md:block pt-2">
               <button
                 type="button"
                 onClick={handleInterestClick}
-                className="interest-btn w-full h-14 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-sm font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="interest-btn w-full h-14 rounded-full bg-secondary md:hover:bg-green-600 md:hover:text-white text-sm font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 <MessageCircle className="w-5 h-5" />
                 Tenho interesse
               </button>
             </div>
           ) : (
-            <div className="pt-2">
+            <div className="hidden md:block pt-2">
               <div className="w-full h-14 rounded-full bg-secondary text-muted-foreground text-sm font-semibold uppercase tracking-wider flex items-center justify-center">
                 Veículo vendido
               </div>
@@ -506,7 +506,7 @@ export default function VehicleDetail() {
           <button
             type="button"
             onClick={handleInterestClick}
-            className="interest-btn w-full h-12 rounded-full bg-secondary hover:bg-green-600 hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="interest-btn w-full h-12 rounded-full bg-secondary md:hover:bg-green-600 md:hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             <MessageCircle className="w-4 h-4" />
             Tenho interesse
@@ -537,7 +537,7 @@ export default function VehicleDetail() {
 
 function SpecCard({ icon: Icon, label, value }) {
   return (
-    <div className="bg-secondary/70 rounded-2xl p-4">
+    <div className="bg-secondary/70 rounded-2xl p-4 min-w-0">
       <Icon className="w-4 h-4 text-muted-foreground mb-2" />
       <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
       <div className="font-semibold text-sm mt-0.5 truncate">{value}</div>
@@ -548,9 +548,9 @@ function SpecCard({ icon: Icon, label, value }) {
 function DetailRow({ label, value }) {
   if (!value) return null;
   return (
-    <div>
+    <div className="min-w-0">
       <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
-      <div className="font-semibold text-sm mt-0.5">{value}</div>
+      <div className="font-semibold text-sm mt-0.5 break-words">{value}</div>
     </div>
   );
 }

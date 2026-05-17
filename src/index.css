@@ -63,6 +63,8 @@
   }
   html, body {
     @apply bg-background text-foreground;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -142,6 +144,11 @@
   .interest-btn:hover {
     animation: none;
     background-image: none;
+  }
+
+  .vehicle-detail-page {
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   .vehicle-detail-gallery {
