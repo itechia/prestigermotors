@@ -19,7 +19,6 @@ import { getVehicleMeta } from "@/lib/vehicleMeta";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { useTaxonomies } from "@/lib/useTaxonomies";
 import { buildResolvers } from "@/lib/taxLabels";
-import { imgUrl } from "@/lib/imgUrl";
 import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
@@ -160,7 +159,6 @@ export default function VehicleDetail() {
   const totalSlides = images.length + (hasEmbed ? 1 : 0);
   const showingEmbed = hasEmbed && activeImage === images.length;
   const imageIndex = activeImage; // imagens estão nos índices 0..N-1
-  const galleryImage = imgUrl(images[imageIndex], { w: 1200, q: 85 });
   const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
@@ -198,13 +196,9 @@ export default function VehicleDetail() {
               </>
             ) : (
               <img
-                src={galleryImage}
+                src={images[imageIndex]}
                 alt={vehicle.model}
                 className="vehicle-detail-gallery-media absolute inset-0 w-full h-full cursor-zoom-in"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = images[imageIndex];
-                }}
                 onClick={() => setFsSlide(activeImage)}
                 loading="eager"
                 decoding="async"
