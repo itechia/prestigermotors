@@ -1,10 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/api/supabaseClient";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 
-// Reads taxonomy lists from StoreSettings, falling back to legacy defaults so
-// existing data keeps rendering even before admin populates the new lists.
-//
-// All lists are arrays of { label, value }, where `value` is the slug stored
-// on the Vehicle entity.
+// Reads normalized relational taxonomy tables. StoreSettings remains as a
+// compatibility fallback for local mode and for first render during loading.
 
 const LEGACY_FUEL = [
   { label: "Flex", value: "flex" },
@@ -25,7 +24,7 @@ const LEGACY_BODY = [
   { label: "Hatch", value: "hatch" },
   { label: "SUV", value: "suv" },
   { label: "Picape", value: "picape" },
-  { label: "Cupê", value: "cupê" },
+  { label: "Cupê", value: "cupe" },
   { label: "Conversível", value: "conversivel" },
   { label: "Minivan", value: "minivan" },
   { label: "Utilitário", value: "utilitario" },
@@ -36,8 +35,6 @@ const LEGACY_CONDITION = [
   { label: "Usado", value: "usado" },
 ];
 
-// Slugify pt-BR label into a stable value used for storing on entities and
-// matching filters. Keeps it simple and predictable.
 export function slugify(s) {
   if (!s) return "";
   return String(s)
@@ -59,31 +56,97 @@ function normalizeSimpleList(arr, fallback) {
     .filter((x) => x && x.label);
 }
 
+export const VEHICLE_TAXONOMIES_QUERY_KEY = ["vehicle-taxonomies"];
+
+async function fetchRelationalTaxonomies() {
+  const [optionsResult, brandsResult, modelsResult] = await Promise.all([
+    supabase.from("public_vehicle_taxonomy_options").select("*"),
+    supabase.from("public_vehicle_brands").select("*"),
+    supabase.from("public_vehicle_models").select("*"),
+  ]);
+
+  if (optionsResult.error) throw optionsResult.error;
+  if (brandsResult.error) throw brandsResult.error;
+  if (modelsResult.error) throw modelsResult.error;
+
+  const byKind = {
+    vehicle_type: [],
+    category: [],
+    fuel: [],
+    transmission: [],
+    condition: [],
+    color: [],
+  };
+
+  (optionsResult.data || []).forEach((item) => {
+    if (!byKind[item.kind]) return;
+    byKind[item.kind].push({ label: item.label, value: item.value });
+  });
+
+  return {
+    vehicle_types: byKind.vehicle_type,
+    categories: byKind.category,
+    fuels: byKind.fuel,
+    transmissions: byKind.transmission,
+    conditions: byKind.condition,
+    colors: byKind.color,
+    brands: (brandsResult.data || []).map((b) => ({
+      label: b.label,
+      value: b.value,
+      logo_url: b.logo_url,
+    })),
+    models: (modelsResult.data || []).map((m) => ({
+      label: m.label,
+      value: m.value,
+      parent: m.parent || "",
+    })),
+  };
+}
+
 export function useTaxonomies() {
   const s = useStoreSettings();
+  const { data: relational } = useQuery({
+    queryKey: VEHICLE_TAXONOMIES_QUERY_KEY,
+    queryFn: fetchRelationalTaxonomies,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const vehicle_types = normalizeSimpleList(s.tax_vehicle_types, []); // empty default — admin must add to enable
-  const categories = normalizeSimpleList(s.tax_categories, LEGACY_BODY);
-  const fuels = normalizeSimpleList(s.tax_fuels, LEGACY_FUEL);
-  const transmissions = normalizeSimpleList(s.tax_transmissions, LEGACY_TRANSMISSION);
-  const conditions = normalizeSimpleList(s.tax_conditions, LEGACY_CONDITION);
-  const colors = normalizeSimpleList(s.tax_colors, []);
+  const vehicle_types = relational?.vehicle_types?.length
+    ? relational.vehicle_types
+    : normalizeSimpleList(s.tax_vehicle_types, []);
+  const categories = relational?.categories?.length
+    ? relational.categories
+    : normalizeSimpleList(s.tax_categories, LEGACY_BODY);
+  const fuels = relational?.fuels?.length
+    ? relational.fuels
+    : normalizeSimpleList(s.tax_fuels, LEGACY_FUEL);
+  const transmissions = relational?.transmissions?.length
+    ? relational.transmissions
+    : normalizeSimpleList(s.tax_transmissions, LEGACY_TRANSMISSION);
+  const conditions = relational?.conditions?.length
+    ? relational.conditions
+    : normalizeSimpleList(s.tax_conditions, LEGACY_CONDITION);
+  const colors = relational?.colors?.length
+    ? relational.colors
+    : normalizeSimpleList(s.tax_colors, []);
 
-  // Models are stored as { label, parent } where parent is the brand slug.
-  const modelsRaw = Array.isArray(s.tax_models) ? s.tax_models : [];
-  const models = modelsRaw
-    .map((m) => {
-      if (!m) return null;
-      if (typeof m === "string") return { label: m, value: slugify(m), parent: "" };
-      return { label: m.label, value: slugify(m.label), parent: m.parent || "" };
-    })
-    .filter((x) => x && x.label);
+  const models = relational?.models?.length
+    ? relational.models
+    : (Array.isArray(s.tax_models) ? s.tax_models : [])
+        .map((m) => {
+          if (!m) return null;
+          if (typeof m === "string") return { label: m, value: slugify(m), parent: "" };
+          return { label: m.label, value: slugify(m.label), parent: m.parent || "" };
+        })
+        .filter((x) => x && x.label);
 
-  const brands = (s.brands || []).map((b) => ({
-    label: b.name,
-    value: slugify(b.name),
-    logo_url: b.logo_url,
-  }));
+  const brands = relational?.brands?.length
+    ? relational.brands
+    : (s.brands || []).map((b) => ({
+        label: b.name,
+        value: slugify(b.name),
+        logo_url: b.logo_url,
+      }));
 
   return { vehicle_types, categories, fuels, transmissions, conditions, colors, models, brands };
 }

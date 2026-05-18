@@ -3,13 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/api/supabaseClient";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Share2, MessageCircle,
   Gauge, Fuel, Calendar, Settings, Palette, DoorOpen, Check,
-  Clock, Flame, TrendingDown, ChevronLeft, ChevronRight, RotateCw,
+  Clock, Flame, TrendingDown, ChevronLeft, ChevronRight,
   X, ZoomIn, ZoomOut, Maximize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,11 +22,14 @@ import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
+import { fetchVehicleDetail, fetchVehicleEmbed, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
+import { imgUrl } from "@/lib/imgUrl";
 
 export default function VehicleDetail() {
   const { id } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const settings = useStoreSettings();
   const tax = useTaxonomies();
   const labels = buildResolvers(tax);
@@ -50,11 +52,11 @@ export default function VehicleDetail() {
     const nome = searchParams.get("nome") || "";
     const tel = searchParams.get("tel") || "";
     if (!nome && !tel) return;
-    if (settings.interest_webhook_enabled && settings.interest_webhook_url) {
+    if (settings.interest_webhook_enabled) {
       autoOpenedRef.current = true;
       setInterestOpen(true);
     }
-  }, [settings.interest_webhook_enabled, settings.interest_webhook_url, searchParams]);
+  }, [settings.interest_webhook_enabled, searchParams]);
 
   // Mantém a janela de thumbnails visível ao redor do slide ativo.
   // Deve ficar antes dos early returns para não violar a rules-of-hooks.
@@ -69,16 +71,21 @@ export default function VehicleDetail() {
 
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ["vehicle", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error && error.code !== "PGRST116") throw error;
-      return data ?? null;
+    queryFn: () => fetchVehicleDetail(id),
+    placeholderData: () => {
+      const catalog = queryClient.getQueryData(VEHICLES_QUERY_KEY);
+      return Array.isArray(catalog) ? catalog.find((v) => v.id === id) : undefined;
     },
     staleTime: 60 * 60 * 1000, // 1 hora — evita troca de imagem por background refetch
+  });
+
+  const vehicleHasEmbed = Boolean(vehicle?.has_embed || vehicle?.embed_html?.trim());
+  const { data: embedHtml = "", isFetching: isEmbedLoading } = useQuery({
+    queryKey: ["vehicle", id, "embed"],
+    queryFn: () => fetchVehicleEmbed(id),
+    enabled: vehicleHasEmbed,
+    staleTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   if (isLoading) {
@@ -105,7 +112,7 @@ export default function VehicleDetail() {
   const images = vehicle.images?.length > 0
     ? vehicle.images
     : ["https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80"];
-  const hasEmbed = Boolean(vehicle.embed_html?.trim());
+  const hasEmbed = vehicleHasEmbed;
 
   const meta = getVehicleMeta(vehicle);
   // Coerce to boolean so JSX never renders the falsy `0` (e.g. when price_old=0).
@@ -143,9 +150,7 @@ export default function VehicleDetail() {
 
   // When the interest webhook is active, the "Tenho interesse" CTA opens the
   // customizable form modal instead of jumping straight to WhatsApp.
-  const useInterestForm = Boolean(
-    settings.interest_webhook_enabled && settings.interest_webhook_url
-  );
+  const useInterestForm = Boolean(settings.interest_webhook_enabled);
   const handleInterestClick = () => {
     if (useInterestForm) {
       setInterestOpen(true);
@@ -154,11 +159,10 @@ export default function VehicleDetail() {
     }
   };
 
-  // Slides 0..N-1 = images; slide N = embed (quando existe).
-  // Embed fica por último para a primeira imagem exibida ser sempre a foto do carro.
+  // Slide 0 = embed/360 quando existe; demais slides = imagens.
   const totalSlides = images.length + (hasEmbed ? 1 : 0);
-  const showingEmbed = hasEmbed && activeImage === images.length;
-  const imageIndex = activeImage; // imagens estão nos índices 0..N-1
+  const showingEmbed = hasEmbed && activeImage === 0;
+  const imageIndex = hasEmbed ? activeImage - 1 : activeImage;
   const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
@@ -175,11 +179,11 @@ export default function VehicleDetail() {
         {/* Gallery */}
         <div className="lg:col-span-3 space-y-3 min-w-0">
           <div className="vehicle-detail-gallery relative rounded-3xl overflow-hidden bg-secondary">
-            {showingEmbed ? (
+            {showingEmbed && embedHtml ? (
               <>
                 <iframe
                   key="embed"
-                  srcDoc={vehicle.embed_html}
+                  srcDoc={embedHtml}
                   title={`${vehicle.brand} ${vehicle.model} 360°`}
                   sandbox="allow-scripts allow-same-origin"
                   scrolling="no"
@@ -194,15 +198,31 @@ export default function VehicleDetail() {
                   <Maximize2 className="w-4 h-4" />
                 </button>
               </>
-            ) : (
-              <img
-                src={images[imageIndex]}
+            ) : showingEmbed ? (
+              <EmbedLoadingPreview
+                src={images[0]}
                 alt={vehicle.model}
-                className="vehicle-detail-gallery-media absolute inset-0 w-full h-full cursor-zoom-in"
-                onClick={() => setFsSlide(activeImage)}
-                loading="eager"
-                decoding="async"
+                loading={isEmbedLoading}
               />
+            ) : (
+              <>
+                <img
+                  src={imgUrl(images[imageIndex], { w: 1200, h: 900, q: 78 })}
+                  alt={vehicle.model}
+                  className="vehicle-detail-gallery-media absolute inset-0 w-full h-full cursor-zoom-in"
+                  onClick={() => setFsSlide(activeImage)}
+                  loading="eager"
+                  decoding="async"
+                />
+                <button
+                  onClick={() => setFsSlide(activeImage)}
+                  className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                  aria-label="Abrir imagem em tela cheia"
+                  title="Tela cheia"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+              </>
             )}
 
             <div className="absolute top-4 left-4 flex gap-2">
@@ -255,21 +275,19 @@ export default function VehicleDetail() {
               <div className="sm:hidden overflow-x-auto scrollbar-hide">
                 <div className="flex gap-2 pb-1">
                   {Array.from({ length: totalSlides }).map((_, slideIdx) => {
-                    const isEmbed = hasEmbed && slideIdx === images.length;
-                    const imgIdx = slideIdx;
+                    const isEmbed = hasEmbed && slideIdx === 0;
+                    const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
                     return isEmbed ? (
                       <button
                         key="embed-sm"
-                        onClick={() => setActiveImage(images.length)}
+                        onClick={() => setActiveImage(0)}
                         className={cn(
-                          "flex-shrink-0 w-14 aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                          activeImage === images.length
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-transparent bg-secondary text-muted-foreground opacity-60"
+                          "relative flex-shrink-0 w-14 aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          activeImage === 0 ? "border-primary" : "border-transparent opacity-70"
                         )}
                       >
-                        <RotateCw className="w-4 h-4" />
-                        <span className="text-[9px] font-bold tracking-wider">360°</span>
+                        <img src={imgUrl(images[0], { w: 160, h: 160, q: 70 })} alt="" className="w-full h-full object-cover" />
+                        <Mini360Indicator />
                       </button>
                     ) : (
                       <button
@@ -281,7 +299,7 @@ export default function VehicleDetail() {
                         )}
                       >
                         <img
-                          src={images[imgIdx]}
+                          src={imgUrl(images[imgIdx], { w: 160, h: 160, q: 70 })}
                           alt=""
                           className="w-full h-full object-cover"
                         />
@@ -306,21 +324,19 @@ export default function VehicleDetail() {
                     if (slideIdx >= totalSlides) {
                       return <div key={col} className="aspect-square" />;
                     }
-                    const isEmbed = hasEmbed && slideIdx === images.length;
-                    const imgIdx = slideIdx;
+                    const isEmbed = hasEmbed && slideIdx === 0;
+                    const imgIdx = hasEmbed ? slideIdx - 1 : slideIdx;
                     return isEmbed ? (
                       <button
                         key="embed"
-                        onClick={() => setActiveImage(images.length)}
+                        onClick={() => setActiveImage(0)}
                         className={cn(
-                          "aspect-square rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                          activeImage === images.length
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-transparent bg-secondary text-muted-foreground opacity-60 hover:opacity-100"
+                          "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          activeImage === 0 ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
                         )}
                       >
-                        <RotateCw className="w-4 h-4" />
-                        <span className="text-[9px] font-bold tracking-wider">360°</span>
+                        <img src={imgUrl(images[0], { w: 160, h: 160, q: 70 })} alt="" className="w-full h-full object-cover" />
+                        <Mini360Indicator />
                       </button>
                     ) : (
                       <button
@@ -332,7 +348,7 @@ export default function VehicleDetail() {
                         )}
                       >
                         <img
-                          src={images[imgIdx]}
+                          src={imgUrl(images[imgIdx], { w: 160, h: 160, q: 70 })}
                           alt=""
                           className="w-full h-full object-cover"
                         />
@@ -524,8 +540,8 @@ export default function VehicleDetail() {
       {fsSlide !== null && (
         <FullscreenViewer
           slides={[
+            ...(hasEmbed ? [{ type: "embed", html: embedHtml, loading: isEmbedLoading }] : []),
             ...images.map(src => ({ type: "image", src })),
-            ...(hasEmbed ? [{ type: "embed", html: vehicle.embed_html }] : []),
           ]}
           initialSlide={fsSlide}
           onClose={() => setFsSlide(null)}
@@ -541,6 +557,39 @@ function SpecCard({ icon: Icon, label, value }) {
       <Icon className="w-4 h-4 text-muted-foreground mb-2" />
       <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
       <div className="font-semibold text-sm mt-0.5 truncate">{value}</div>
+    </div>
+  );
+}
+
+function Mini360Indicator() {
+  return (
+    <span className="vehicle-360-indicator absolute left-1.5 bottom-1.5" aria-label="Visualização 360 graus">
+      <span className="vehicle-360-ring" aria-hidden="true" />
+      <span className="vehicle-360-text">360°</span>
+    </span>
+  );
+}
+
+function EmbedLoadingPreview({ src, alt, loading }) {
+  return (
+    <div className="absolute inset-0">
+      <img
+        src={imgUrl(src, { w: 1200, h: 900, q: 72 })}
+        alt={alt}
+        className="vehicle-detail-gallery-media absolute inset-0 w-full h-full"
+        loading="eager"
+        decoding="async"
+      />
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="inline-flex items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+          <span className="vehicle-360-indicator">
+            <span className="vehicle-360-ring" aria-hidden="true" />
+            <span className="vehicle-360-text">360°</span>
+          </span>
+          {loading ? "Carregando visualização" : "Preparando visualização"}
+        </span>
+      </div>
     </div>
   );
 }
@@ -568,10 +617,16 @@ function FullscreenViewer({ slides, initialSlide, onClose }) {
   const pinchDist = useRef(null);
   const pinchScale = useRef(1);
 
-  // Bloqueia scroll do body
+  // Bloqueia scroll do body somente enquanto o visualizador está aberto.
   useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
   }, []);
 
   // Reset zoom ao trocar imagem
@@ -719,7 +774,7 @@ function FullscreenViewer({ slides, initialSlide, onClose }) {
             }}
           />
         </div>
-      ) : (
+      ) : current.html ? (
         /* Embed 360° — ocupa tela inteira, totalmente interativo */
         <iframe
           srcDoc={current.html}
@@ -727,6 +782,19 @@ function FullscreenViewer({ slides, initialSlide, onClose }) {
           scrolling="no"
           style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
         />
+      ) : (
+        <div style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "rgba(255,255,255,0.78)",
+          fontSize: 14,
+          fontWeight: 600,
+        }}>
+          {current.loading ? "Carregando 360°..." : "Visualização 360° indisponível"}
+        </div>
       )}
 
       {/* ── Setas de navegação (ambos os tipos) ────────────────── */}

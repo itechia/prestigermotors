@@ -1,12 +1,12 @@
 import React from "react";
-import { Gauge, Calendar, Flame, MessageCircle, RotateCw } from "lucide-react";
+import { Gauge, Calendar, Flame, MessageCircle } from "lucide-react";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
 
 // Read-only preview of how a vehicle will appear on the public catalog card.
-// Intentionally NOT a Link — clicks do nothing here.
+// Intentionally NOT a Link; clicks do nothing here.
 export default function VehicleCardPreview({ vehicle }) {
   const v = vehicle || {};
-  const hasEmbed = Boolean(v.embed_html?.trim());
+  const hasEmbed = Boolean(v.has_embed || v.embed_html?.trim());
   const mainImage =
     v.images?.[0] ||
     "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80";
@@ -20,26 +20,16 @@ export default function VehicleCardPreview({ vehicle }) {
   return (
     <div className="flex flex-col bg-card rounded-3xl overflow-hidden border border-border/50 shadow-sm">
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-        {hasEmbed ? (
-          <>
-            <iframe
-              srcDoc={v.embed_html}
-              title="preview 360°"
-              sandbox="allow-scripts allow-same-origin"
-              scrolling="no"
-              className="w-full h-full border-0 block"
-              style={{ pointerEvents: 'none' }}
-            />
-            <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
-              <RotateCw className="w-3 h-3" /> 360°
-            </div>
-          </>
-        ) : (
-          <img
-            src={mainImage}
-            alt={`${v.brand || ""} ${v.model || ""}`}
-            className="w-full h-full object-cover"
-          />
+        <img
+          src={mainImage}
+          alt={`${v.brand || ""} ${v.model || ""}`}
+          className="w-full h-full object-cover"
+        />
+        {hasEmbed && (
+          <span className="vehicle-360-indicator absolute bottom-3 left-3 z-10">
+            <span className="vehicle-360-ring" aria-hidden="true" />
+            <span className="vehicle-360-text">360°</span>
+          </span>
         )}
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
 
@@ -80,7 +70,7 @@ export default function VehicleCardPreview({ vehicle }) {
         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
-            <span>{formatYear(v.manufacture_year, v.year) || v.year || "—"}</span>
+            <span>{formatYear(v.manufacture_year, v.year) || v.year || "-"}</span>
           </div>
           <div className="flex items-center gap-1">
             <Gauge className="w-3 h-3" />

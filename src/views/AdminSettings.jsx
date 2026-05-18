@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useStoreSettingsRaw } from "@/lib/useStoreSettings";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { DEFAULT_SETTINGS, SETTINGS_SINGLETON_QUERY_KEY } from "@/lib/defaults";
+import { DEFAULT_SETTINGS, SETTINGS_RAW_QUERY_KEY, SETTINGS_SINGLETON_QUERY_KEY } from "@/lib/defaults";
 import AdminShell from "../components/admin/AdminShell";
 import SettingsGeneral from "../components/admin/settings/SettingsGeneral";
 import SettingsHero from "../components/admin/settings/SettingsHero";
@@ -20,6 +20,7 @@ import SettingsFooter from "../components/admin/settings/SettingsFooter";
 import SettingsTaxonomies from "../components/admin/settings/SettingsTaxonomies";
 import SettingsInterestForm from "../components/admin/settings/SettingsInterestForm";
 import SettingsWebhooks from "../components/admin/settings/SettingsWebhooks";
+import { VEHICLE_TAXONOMIES_QUERY_KEY } from "@/lib/useTaxonomies";
 
 const TABS = [
   { id: "general", label: "Loja", icon: Store },
@@ -73,6 +74,8 @@ export default function AdminSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SETTINGS_SINGLETON_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: SETTINGS_RAW_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: VEHICLE_TAXONOMIES_QUERY_KEY });
       toast.success("Configurações salvas!");
     },
     onError: () => toast.error("Erro ao salvar"),
@@ -94,7 +97,7 @@ export default function AdminSettings() {
       }
     >
       {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto scrollbar-hide mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 border-b border-border" role="tablist">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6" role="tablist">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -105,15 +108,14 @@ export default function AdminSettings() {
               role="tab"
               aria-selected={active}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-[13px] font-medium whitespace-nowrap transition-colors relative",
+                "min-h-11 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-[13px] font-medium transition-colors relative",
                 active
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-secondary/60"
               )}
             >
               <Icon className="w-4 h-4" aria-hidden="true" />
               {t.label}
-              {active && <span className="absolute bottom-[-1px] left-2 right-2 h-0.5 bg-primary rounded-full" />}
             </button>
           );
         })}

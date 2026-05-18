@@ -117,3 +117,4 @@ export function withDefaults(settings) {
 }
 
 export const SETTINGS_SINGLETON_QUERY_KEY = ["store-settings"];
+export const SETTINGS_RAW_QUERY_KEY = ["store-settings", "raw"];

@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
+import { usePathname } from 'next/navigation';
 
 const makeQueryClient = () =>
   new QueryClient({
@@ -22,6 +23,7 @@ const makeQueryClient = () =>
 
 export function Providers({ children }) {
   const [queryClient] = useState(makeQueryClient);
+  const pathname = usePathname();
 
   // Registra o Service Worker apenas em produção
   useEffect(() => {
@@ -31,6 +33,19 @@ export function Providers({ children }) {
       });
     }
   }, []);
+
+  useEffect(() => {
+    const unlockPageScroll = () => {
+      const hasOpenDialog = document.querySelector('[role="dialog"], [data-state="open"][data-radix-popper-content-wrapper]');
+      if (hasOpenDialog) return;
+      if (document.body.style.overflow === 'hidden') document.body.style.overflow = '';
+      if (document.documentElement.style.overflow === 'hidden') document.documentElement.style.overflow = '';
+    };
+
+    unlockPageScroll();
+    const id = window.setTimeout(unlockPageScroll, 250);
+    return () => window.clearTimeout(id);
+  }, [pathname]);
 
   return (
     <ThemeProvider>

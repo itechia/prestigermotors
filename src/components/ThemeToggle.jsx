@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@/lib/ThemeContext";
 import { cn } from "@/lib/utils";
 
 export default function ThemeToggle({ className }) {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const isDark = theme === "dark";
   return (
     <button
@@ -17,7 +19,11 @@ export default function ThemeToggle({ className }) {
         className
       )}
     >
-      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      {mounted ? (
+        isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />
+      ) : (
+        <span className="w-4 h-4" aria-hidden="true" />
+      )}
     </button>
   );
 }

@@ -26,7 +26,7 @@ export default function SettingsTaxonomies({ form, update }) {
   return (
     <div className="space-y-4">
       {/* Sub-tabs */}
-      <div className="flex gap-1 overflow-x-auto scrollbar-hide bg-secondary/40 rounded-2xl p-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-2 bg-secondary/40 rounded-2xl p-2">
         {SUB_TABS.map((t) => {
           const Icon = t.icon;
           const active = sub === t.id;
@@ -36,7 +36,7 @@ export default function SettingsTaxonomies({ form, update }) {
               type="button"
               onClick={() => setSub(t.id)}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors",
+                "min-h-10 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors",
                 active
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"

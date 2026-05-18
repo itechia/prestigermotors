@@ -1,17 +1,29 @@
 import { supabase } from "@/api/supabaseClient";
 
-// Colunas necessárias para o catálogo.
-// NÃO inclui 'description' nem 'features' — podem ser textos/arrays grandes.
-// A página de detalhe faz select(*) separado para obter o registro completo.
+// Colunas necessarias para o catalogo.
+// Nao inclui description/features nem embed_html: o HTML 360 pode ser muito
+// grande e deve ser baixado somente na pagina de detalhe.
 const CATALOG_COLS = [
   "id", "brand", "model", "version",
   "year", "manufacture_year", "mileage",
   "price", "price_old",
-  "images", "embed_html",
+  "images", "has_embed",
   "featured", "status", "hidden",
   "vehicle_type", "body_type", "fuel_type",
   "transmission", "condition", "color",
   "created_date",
+].join(",");
+
+const DETAIL_COLS = [
+  "id", "brand", "model", "version",
+  "year", "manufacture_year", "mileage",
+  "price", "price_old",
+  "images", "has_embed",
+  "featured", "status", "hidden",
+  "vehicle_type", "body_type", "fuel_type",
+  "transmission", "condition", "color",
+  "created_date", "listed_date", "stock_quantity",
+  "description", "features", "doors", "engine",
 ].join(",");
 
 export const VEHICLES_QUERY_KEY = ["vehicles"];
@@ -28,7 +40,7 @@ export async function fetchVehiclesCatalog() {
   return data ?? [];
 }
 
-// Admin: mesmas colunas do catálogo mas sem limite de 200 e inclui ocultos
+// Admin: mesmas colunas do catalogo mas sem limite de 200 e inclui ocultos.
 export async function fetchVehiclesAdmin() {
   const { data, error } = await supabase
     .from("vehicles")
@@ -37,4 +49,24 @@ export async function fetchVehiclesAdmin() {
     .limit(500);
   if (error) throw error;
   return data ?? [];
+}
+
+export async function fetchVehicleDetail(id) {
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select(DETAIL_COLS)
+    .eq("id", id)
+    .single();
+  if (error && error.code !== "PGRST116") throw error;
+  return data ?? null;
+}
+
+export async function fetchVehicleEmbed(id) {
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select("embed_html")
+    .eq("id", id)
+    .single();
+  if (error && error.code !== "PGRST116") throw error;
+  return data?.embed_html || "";
 }

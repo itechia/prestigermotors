@@ -1,75 +1,68 @@
 'use client';
 
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, memo } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { Gauge, Calendar, Flame, MessageCircle, RotateCw } from "lucide-react";
+import { Gauge, Calendar, Flame, MessageCircle } from "lucide-react";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import InterestFormDialog from "@/components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
 import { imgUrl } from "@/lib/imgUrl";
+import { fetchVehicleDetail } from "@/lib/vehicleQueries";
 
 function VehicleCard({ vehicle, index = 0 }) {
   const settings = useStoreSettings();
   const queryClient = useQueryClient();
   const [interestOpen, setInterestOpen] = useState(false);
 
-  // Popula o cache da página de detalhe com os dados que já temos do catálogo.
-  // Assim, clicar no card abre a página de detalhe instantaneamente.
-  useEffect(() => {
-    queryClient.setQueryData(["vehicle", vehicle.id], vehicle);
-  }, [vehicle.id]);
-
-  const hasEmbed    = Boolean(vehicle.embed_html?.trim());
-  const rawImage    = vehicle.images?.[0] || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80";
-  const mainImage   = imgUrl(rawImage, { w: 480, h: 360, q: 75 });
+  const hasEmbed = Boolean(vehicle.has_embed || vehicle.embed_html?.trim());
+  const rawImage = vehicle.images?.[0] || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80";
+  const mainImage = imgUrl(rawImage, { w: 480, h: 360, q: 75 });
 
   const hasDiscount = Boolean(vehicle.price_old && vehicle.price_old > vehicle.price);
-  const savings     = hasDiscount ? vehicle.price_old - vehicle.price : 0;
+  const savings = hasDiscount ? vehicle.price_old - vehicle.price : 0;
   const discountPct = hasDiscount ? Math.round((savings / vehicle.price_old) * 100) : 0;
+  const detailHref = `/veiculo/${vehicle.id}`;
+
+  const prefetchDetail = () => {
+    queryClient.prefetchQuery({
+      queryKey: ["vehicle", vehicle.id],
+      queryFn: () => fetchVehicleDetail(vehicle.id),
+      staleTime: 60 * 60 * 1000,
+    });
+  };
 
   const handleInterest = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (settings.interest_webhook_enabled && settings.interest_webhook_url) {
+    if (settings.interest_webhook_enabled) {
       setInterestOpen(true);
     } else {
       window.open(buildWhatsAppHref(settings.whatsapp_number, vehicle), "_blank");
     }
   };
 
-  const detailHref = `/veiculo/${vehicle.id}`;
-
   return (
     <div className="card-fade-in" style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}>
       <div className="group flex flex-col h-full bg-card rounded-3xl overflow-hidden border border-border/50 hover:border-border hover:shadow-xl transition-all duration-300">
-
-        {/* ── Área de imagem ───────────────────────────── */}
         <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-          <Link href={detailHref} className="block w-full h-full">
-            {hasEmbed ? (
-              /* 360° embed como capa — pointer-events-none para o clique ir para o Link */
-              <iframe
-                srcDoc={vehicle.embed_html}
-                title={`${vehicle.brand} ${vehicle.model} 360°`}
-                sandbox="allow-scripts allow-same-origin"
-                scrolling="no"
-                tabIndex={-1}
-                className="w-full h-full border-0 block pointer-events-none"
-              />
-            ) : (
-              <img
-                src={mainImage}
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = rawImage; }}
-                alt={`${vehicle.brand} ${vehicle.model}`}
-                className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
-                loading="lazy"
-                width={480}
-                height={360}
-                decoding="async"
-              />
-            )}
+          <Link
+            href={detailHref}
+            className="block w-full h-full"
+            onMouseEnter={prefetchDetail}
+            onFocus={prefetchDetail}
+          >
+            <img
+              src={mainImage}
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = rawImage; }}
+              alt={`${vehicle.brand} ${vehicle.model}`}
+              className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+              loading="lazy"
+              width={480}
+              height={360}
+              decoding="async"
+            />
           </Link>
 
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
@@ -99,14 +92,20 @@ function VehicleCard({ vehicle, index = 0 }) {
 
           {hasEmbed && (
             <div className="absolute bottom-3 left-3 pointer-events-none">
-              <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
-                <RotateCw className="w-3 h-3" /> 360°
+              <span className="vehicle-360-indicator">
+                <span className="vehicle-360-ring" aria-hidden="true" />
+                <span className="vehicle-360-text">360°</span>
               </span>
             </div>
           )}
         </div>
 
-        <Link href={detailHref} className="p-4 space-y-3 flex flex-col flex-1">
+        <Link
+          href={detailHref}
+          className="p-4 space-y-3 flex flex-col flex-1"
+          onMouseEnter={prefetchDetail}
+          onFocus={prefetchDetail}
+        >
           <div>
             <h3 className="font-display font-bold text-base leading-tight truncate">
               {vehicle.brand} {vehicle.model}

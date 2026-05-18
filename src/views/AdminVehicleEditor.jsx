@@ -77,17 +77,19 @@ function Editor() {
   const save = useMutation({
     mutationFn: async () => {
       const now = new Date().toISOString();
+      const payload = { ...form };
+      delete payload.has_embed;
       if (isNew) {
         const newId = crypto.randomUUID();
         const { error } = await supabase
           .from("vehicles")
-          .insert({ id: newId, ...form, created_date: now, updated_date: now });
+          .insert({ id: newId, ...payload, created_date: now, updated_date: now });
         if (error) throw error;
-        return { id: newId, ...form };
+        return { id: newId, ...payload };
       }
       const { data, error } = await supabase
         .from("vehicles")
-        .update({ ...form, updated_date: now })
+        .update({ ...payload, updated_date: now })
         .eq("id", id)
         .select()
         .single();
@@ -161,7 +163,7 @@ function Editor() {
       {/* Imagens */}
       <Section
         title="Imagens"
-        desc="Arraste para reordenar — a primeira é a capa do anúncio. Se houver HTML embed (abaixo), ele substitui a capa. Tamanho recomendado: 1600 × 1200 px (proporção 4:3, JPG ou PNG, até 1 MB cada). Use sempre a mesma proporção para os cards ficarem uniformes.">
+        desc="Arraste para reordenar. A primeira imagem é a capa do anúncio e a miniatura do 360°. Se houver HTML embed, ele aparece como primeiro slide na galeria. Tamanho recomendado: 1600 x 1200 px (proporção 4:3, JPG ou PNG, até 5 MB cada).">
         <VehicleImagesManager
           images={form.images || []}
           onChange={(imgs) => update("images", imgs)}
@@ -245,7 +247,7 @@ function Editor() {
               onChange={(e) => update("stock_quantity", Number(e.target.value))}
             />
             <p className="text-[11px] text-muted-foreground mt-1">
-              Quando 1, aparece o aviso "Última unidade disponível" na página do veículo.
+              Quando 1, aparece o aviso &quot;Última unidade disponível&quot; na página do veículo.
             </p>
           </Field>
           <Field label="Data do anúncio">
@@ -255,7 +257,7 @@ function Editor() {
               onChange={(e) => update("listed_date", e.target.value)}
             />
             <p className="text-[11px] text-muted-foreground mt-1">
-              Usada para calcular "Anunciado há X dias". Se vazio, usamos a data de cadastro.
+              Usada para calcular &quot;Anunciado há X dias&quot;. Se vazio, usamos a data de cadastro.
             </p>
           </Field>
         </div>

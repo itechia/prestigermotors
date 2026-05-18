@@ -157,5 +157,9 @@ function buildLocalClient() {
     },
   };
 
-  return { auth, from: (table) => buildQuery(table), storage };
+  return {
+    auth,
+    from: (table) => buildQuery(table === "public_store_settings" ? "store_settings" : table),
+    storage,
+  };
 }

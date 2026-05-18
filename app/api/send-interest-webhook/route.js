@@ -23,6 +23,14 @@ function buildYearDisplay(manufacture, model) {
   return String(model || manufacture || '');
 }
 
+const VEHICLE_WEBHOOK_COLS = [
+  'id', 'brand', 'model', 'version',
+  'year', 'manufacture_year', 'price', 'price_old',
+  'mileage', 'fuel_type', 'transmission', 'color',
+  'body_type', 'condition', 'status', 'featured',
+  'images', 'features',
+].join(',');
+
 export async function POST(request) {
   try {
     const supabase = getSupabase();
@@ -38,7 +46,7 @@ export async function POST(request) {
 
     const [{ data: settingsList }, { data: vehicleList }] = await Promise.all([
       supabase.from('store_settings').select('*').limit(1),
-      supabase.from('vehicles').select('*').eq('id', vehicle_id).limit(1),
+      supabase.from('vehicles').select(VEHICLE_WEBHOOK_COLS).eq('id', vehicle_id).limit(1),
     ]);
 
     const settings = settingsList?.[0];

@@ -1,8 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/api/supabaseClient";
-import { withDefaults, SETTINGS_SINGLETON_QUERY_KEY } from "@/lib/defaults";
+import { withDefaults, SETTINGS_RAW_QUERY_KEY, SETTINGS_SINGLETON_QUERY_KEY } from "@/lib/defaults";
 
 async function fetchSettings() {
+  const { data, error } = await supabase
+    .from("public_store_settings")
+    .select("*")
+    .order("updated_date", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+async function fetchSettingsRaw() {
   const { data, error } = await supabase
     .from("store_settings")
     .select("*")
@@ -26,8 +36,8 @@ export function useStoreSettings() {
 // Returns the raw record plus merged values — used by the admin editor.
 export function useStoreSettingsRaw() {
   return useQuery({
-    queryKey: SETTINGS_SINGLETON_QUERY_KEY,
-    queryFn: fetchSettings,
+    queryKey: SETTINGS_RAW_QUERY_KEY,
+    queryFn: fetchSettingsRaw,
     staleTime: 5 * 60 * 1000,
   });
 }
