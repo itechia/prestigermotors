@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = ["admin", "super_admin"].includes(profile?.role);
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: VEHICLES_ADMIN_QUERY_KEY,

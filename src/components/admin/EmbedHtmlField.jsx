@@ -107,7 +107,7 @@ export default function EmbedHtmlField({ value, onChange }) {
         <iframe
           srcDoc={value}
           title="Prévia do HTML embed"
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts allow-forms allow-popups"
           scrolling="no"
           className="w-full aspect-video rounded-xl border border-border/50 bg-secondary block"
           style={{ border: 'none' }}

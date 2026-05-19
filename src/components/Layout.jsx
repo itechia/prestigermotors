@@ -35,8 +35,10 @@ export default function Layout({ children }) {
 
   const navItems = [
     { to: "/", label: "Catálogo", icon: Home },
-    { to: "/vender", label: "Vender", icon: Tag },
   ];
+  if (settings.sell_page_enabled !== false) {
+    navItems.push({ to: "/vender", label: "Vender", icon: Tag });
+  }
   if (isAdmin) navItems.push({ to: "/admin", label: "Admin", icon: LayoutGrid });
 
   const isActive = (to) =>

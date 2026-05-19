@@ -3,14 +3,29 @@ import { motion } from "framer-motion";
 import { DollarSign, ShieldCheck, Clock, ArrowRight } from "lucide-react";
 import SellLeadForm from "../components/sell/SellLeadForm";
 import { useLeadPrefillFromLocation } from "@/lib/prefillParams";
+import { useStoreSettings } from "@/lib/useStoreSettings";
 
 export default function SellMyVehicle() {
   const leadPrefill = useLeadPrefillFromLocation();
+  const settings = useStoreSettings();
 
   // Always start at the top so the user sees the hero/intro on entry
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
+
+  if (settings.sell_page_enabled === false) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+        <div className="bg-card border border-border/50 rounded-2xl p-8">
+          <h1 className="font-display font-bold text-2xl">Pagina indisponivel</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            O envio de veiculos esta temporariamente desativado.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-12 pb-2 md:pb-10">

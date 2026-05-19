@@ -82,6 +82,7 @@ export const DEFAULT_SETTINGS = {
   interest_form_fields: [],
 
   sell_webhook_enabled: false,
+  sell_page_enabled: true,
   sell_webhook_url: "",
   sell_webhook_secret: "",
   sell_webhook_auth_enabled: false,

@@ -1,22 +1,31 @@
 'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchVehiclesAdmin, VEHICLES_ADMIN_QUERY_KEY } from "@/lib/vehicleQueries";
-import { Plus, Car, Search, Flame, ReceiptText } from "lucide-react";
+import { adminFetch, downloadAdminFile } from "@/lib/adminApi";
+import { Plus, Car, Search, Flame, ReceiptText, Download, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/formatters";
 import AdminShell from "../components/admin/AdminShell";
 import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 export default function AdminVehicles() {
   const { profile } = useAuth();
-  const isAdmin = profile?.role === "admin";
+  const queryClient = useQueryClient();
+  const isAdmin = ["admin", "super_admin"].includes(profile?.role);
+  const fileInputRef = useRef(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isTemplateDownloading, setIsTemplateDownloading] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: VEHICLES_ADMIN_QUERY_KEY,
@@ -34,16 +43,78 @@ export default function AdminVehicles() {
     });
   }, [vehicles, search, statusFilter]);
 
+  const exportVehicles = async () => {
+    setIsExporting(true);
+    try {
+      await downloadAdminFile("/api/admin/vehicles/export", "veiculos.xlsx");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const importVehicles = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setIsImporting(true);
+    try {
+      const result = await adminFetch("/api/admin/vehicles/import", {
+        method: "POST",
+        body: formData,
+      });
+      toast.success(`${result.imported || 0} veiculo(s) importado(s).`);
+      setImportDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: VEHICLES_ADMIN_QUERY_KEY });
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const downloadVehicleTemplate = async () => {
+    setIsTemplateDownloading(true);
+    try {
+      await downloadAdminFile("/api/admin/vehicles/template", "modelo-importacao-veiculos.xlsx");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsTemplateDownloading(false);
+    }
+  };
+
   return (
     <AdminShell
       title="Veículos"
       subtitle={`${vehicles.length} cadastrado${vehicles.length !== 1 ? "s" : ""} no total`}
       actions={isAdmin ? (
-        <Button asChild className="rounded-full h-10 px-5 font-semibold">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            className="hidden"
+            onChange={importVehicles}
+          />
+          <Button variant="outline" className="rounded-full h-10 px-4 font-semibold" onClick={exportVehicles} disabled={isExporting}>
+            {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+            Exportar XLSX
+          </Button>
+          <Button variant="outline" className="rounded-full h-10 px-4 font-semibold" onClick={() => setImportDialogOpen(true)} disabled={isImporting}>
+            {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+            Importar XLSX
+          </Button>
+          <Button asChild className="rounded-full h-10 px-5 font-semibold">
           <Link href="/admin/veiculo/novo">
             <Plus className="w-4 h-4 mr-2" /> Novo veículo
           </Link>
-        </Button>
+          </Button>
+        </div>
       ) : null}
     >
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -150,6 +221,43 @@ export default function AdminVehicles() {
           </div>
         )}
       </div>
+
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importar veiculos</DialogTitle>
+            <DialogDescription>
+              Baixe o modelo, preencha as colunas e envie o arquivo XLSX para cadastrar ou atualizar veiculos em massa.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-full"
+              onClick={downloadVehicleTemplate}
+              disabled={isTemplateDownloading}
+            >
+              {isTemplateDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+              Baixar modelo
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isImporting}
+            >
+              {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              Selecionar XLSX
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setImportDialogOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }

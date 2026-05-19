@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -15,11 +15,11 @@ import {
   PanelLeftOpen,
   LogOut,
   ChevronRight,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { getStoreNameFontStyle } from "@/lib/fonts";
-import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdminGuard from "./AdminGuard";
@@ -33,6 +33,15 @@ const NAV = [
   { to: "/admin/usuarios", label: "Usuários", icon: Users, adminOnly: true },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, adminOnly: true },
 ];
+
+const MODULE_BY_ROUTE = {
+  "/admin": "dashboard",
+  "/admin/veiculos": "veiculos",
+  "/admin/vendas": "vendas",
+  "/admin/propostas": "propostas",
+  "/admin/usuarios": "usuarios",
+  "/admin/configuracoes": "configuracoes",
+};
 
 const STORAGE_KEY = "admin_sidebar_collapsed";
 
@@ -63,10 +72,14 @@ function NavItem({ item, collapsed, onClick }) {
 }
 
 export default function AdminShell({ children, title, subtitle, actions }) {
-  const router = useRouter();
   const settings = useStoreSettings();
-  const { profile } = useAuth();
-  const navItems = NAV.filter((item) => !item.adminOnly || profile?.role === "admin");
+  const { profile, realProfile, simulation, isSimulating, stopSimulation, logout } = useAuth();
+  const navItems = NAV.filter((item) => {
+    const roleAllowed = !item.adminOnly || ["admin", "super_admin"].includes(profile?.role);
+    const moduleKey = MODULE_BY_ROUTE[item.to];
+    const moduleAllowed = profile?.role === "super_admin" || profile?.module_access?.[moduleKey] !== false;
+    return roleAllowed && moduleAllowed;
+  });
 
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -80,9 +93,8 @@ export default function AdminShell({ children, title, subtitle, actions }) {
   }, [collapsed]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
     toast.success("Sessão encerrada");
-    router.push("/admin/login");
+    await logout("/admin/login");
   };
 
   const sidebarW = collapsed ? "w-[72px]" : "w-[260px]";
@@ -228,6 +240,19 @@ export default function AdminShell({ children, title, subtitle, actions }) {
         {/* ── Main area ── */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top bar */}
+          {isSimulating && (
+            <div className="h-11 flex items-center justify-between gap-3 px-4 lg:px-8 border-b border-amber-200 bg-amber-50 text-amber-900 text-sm shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <UserCheck className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">
+                  Simulando {simulation?.nome || simulation?.email} ({simulation?.role}) como {realProfile?.email}
+                </span>
+              </div>
+              <Button variant="outline" size="sm" className="h-8 rounded-full bg-white" onClick={stopSimulation}>
+                Encerrar
+              </Button>
+            </div>
+          )}
           <header className="h-16 flex items-center justify-between gap-4 px-4 lg:px-8 border-b border-border/40 bg-card/50 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               {/* Mobile menu trigger */}

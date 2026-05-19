@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminFetch } from "@/lib/adminApi";
+import { useAuth } from "@/lib/AuthContext";
 import AdminShell from "@/components/admin/AdminShell";
 import AdminGuard from "@/components/admin/AdminGuard";
 import { Button } from "@/components/ui/button";
@@ -13,15 +14,19 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, ShieldCheck, UserPlus, KeyRound } from "lucide-react";
+import { Eye, Loader2, Pencil, ShieldCheck, Trash2, UserPlus, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 const emptyUser = { nome: "", email: "", password: "", role: "vendedor" };
 
 export default function AdminUsers() {
   const queryClient = useQueryClient();
+  const { isSuperAdmin, startSimulation, isSimulating } = useAuth();
+  const canManageModuleBlocks = isSuperAdmin && !isSimulating;
   const [newUser, setNewUser] = useState(emptyUser);
   const [resetTarget, setResetTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [newPassword, setNewPassword] = useState("");
 
   const { data: usersPayload, isLoading } = useQuery({
@@ -32,11 +37,17 @@ export default function AdminUsers() {
     queryKey: ["adminUserLogs"],
     queryFn: () => adminFetch("/api/admin/user-logs"),
   });
+  const { data: moduleAccessPayload } = useQuery({
+    queryKey: ["adminModuleAccess"],
+    queryFn: () => adminFetch("/api/admin/module-access"),
+    enabled: canManageModuleBlocks,
+  });
 
   const users = usersPayload?.users || [];
   const logs = logsPayload?.logs || [];
 
   const stats = useMemo(() => ({
+    superAdmins: users.filter((user) => user.role === "super_admin").length,
     admins: users.filter((user) => user.role === "admin").length,
     sellers: users.filter((user) => user.role === "vendedor").length,
     inactive: users.filter((user) => !user.active).length,
@@ -69,6 +80,29 @@ export default function AdminUsers() {
     onError: (error) => toast.error(error.message),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id) => adminFetch(`/api/admin/users/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Usuario excluido.");
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["adminUserLogs"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const moduleMutation = useMutation({
+    mutationFn: (payload) => adminFetch("/api/admin/module-access", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: () => {
+      toast.success("Bloqueio atualizado.");
+      queryClient.invalidateQueries({ queryKey: ["adminModuleAccess"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
   const submitCreate = (event) => {
     event.preventDefault();
     createMutation.mutate(newUser);
@@ -79,6 +113,21 @@ export default function AdminUsers() {
     updateMutation.mutate({ id: resetTarget.id, password: newPassword });
     setResetTarget(null);
     setNewPassword("");
+  };
+
+  const openEdit = (user) => setEditTarget({
+    id: user.id,
+    nome: user.nome || "",
+    email: user.email || "",
+    role: user.role,
+    active: !!user.active,
+  });
+
+  const submitEdit = () => {
+    if (!editTarget) return;
+    updateMutation.mutate(editTarget, {
+      onSuccess: () => setEditTarget(null),
+    });
   };
 
   return (
@@ -116,6 +165,7 @@ export default function AdminUsers() {
                   <SelectContent>
                     <SelectItem value="vendedor">Vendedor</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
+                    {isSuperAdmin && <SelectItem value="super_admin">Super admin</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
@@ -125,11 +175,35 @@ export default function AdminUsers() {
               </Button>
             </form>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              {isSuperAdmin && <Metric label="Super admins" value={stats.superAdmins} />}
               <Metric label="Admins" value={stats.admins} />
               <Metric label="Vendedores" value={stats.sellers} />
               <Metric label="Inativos" value={stats.inactive} />
             </div>
+
+            {canManageModuleBlocks && moduleAccessPayload && (
+              <div className="bg-card border border-border/50 rounded-2xl p-5 space-y-4">
+                <div>
+                  <h2 className="font-display font-bold text-lg">Bloqueios globais por modulo</h2>
+                  <p className="text-xs text-muted-foreground">Use em caso de inadimplencia. As politicas de acesso continuam definindo quem pode usar cada modulo.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {moduleAccessPayload.modules.map((moduleKey) => {
+                    const enabled = moduleAccessPayload.access?.[moduleKey] !== false;
+                    return (
+                      <label key={moduleKey} className="flex items-center justify-between gap-2 rounded-lg border border-border/50 px-3 py-2 text-xs">
+                        <span className="capitalize">{moduleKey}</span>
+                        <Switch
+                          checked={enabled}
+                          onCheckedChange={(checked) => moduleMutation.mutate({ module_key: moduleKey, enabled: checked })}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-5">
@@ -168,6 +242,7 @@ export default function AdminUsers() {
                             <SelectContent>
                               <SelectItem value="admin">Admin</SelectItem>
                               <SelectItem value="vendedor">Vendedor</SelectItem>
+                              {isSuperAdmin && <SelectItem value="super_admin">Super admin</SelectItem>}
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -184,9 +259,34 @@ export default function AdminUsers() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setResetTarget(user)}>
-                            <KeyRound className="w-4 h-4 mr-2" /> Resetar senha
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" className="rounded-full" onClick={() => openEdit(user)}>
+                              <Pencil className="w-4 h-4 mr-2" /> Editar
+                            </Button>
+                            {isSuperAdmin && user.role !== "super_admin" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full"
+                                onClick={() => startSimulation(user.id)}
+                                disabled={isSimulating}
+                              >
+                                <Eye className="w-4 h-4 mr-2" /> Simular
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" className="rounded-full" onClick={() => setResetTarget(user)}>
+                              <KeyRound className="w-4 h-4 mr-2" /> Resetar senha
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="rounded-full"
+                              onClick={() => setDeleteTarget(user)}
+                              disabled={user.role === "super_admin" && !isSuperAdmin}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -245,6 +345,63 @@ export default function AdminUsers() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar usuario</DialogTitle>
+              <DialogDescription>Atualize nome, e-mail, papel e status.</DialogDescription>
+            </DialogHeader>
+            {editTarget && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Nome</Label>
+                  <Input value={editTarget.nome} onChange={(e) => setEditTarget((u) => ({ ...u, nome: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>E-mail</Label>
+                  <Input type="email" value={editTarget.email} onChange={(e) => setEditTarget((u) => ({ ...u, email: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Papel</Label>
+                  <Select value={editTarget.role} onValueChange={(role) => setEditTarget((u) => ({ ...u, role }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vendedor">Vendedor</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      {isSuperAdmin && <SelectItem value="super_admin">Super admin</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2">
+                  <span className="text-sm">Usuario ativo</span>
+                  <Switch checked={editTarget.active} onCheckedChange={(active) => setEditTarget((u) => ({ ...u, active }))} />
+                </label>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancelar</Button>
+              <Button onClick={submitEdit} disabled={updateMutation.isPending}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Excluir usuario</DialogTitle>
+              <DialogDescription>
+                Esta acao remove o acesso de {deleteTarget?.nome || deleteTarget?.email}. Registros historicos permanecem preservados.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+              <Button variant="destructive" onClick={() => deleteMutation.mutate(deleteTarget.id)} disabled={deleteMutation.isPending}>
+                Excluir
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </AdminShell>
     </AdminGuard>
   );
@@ -265,6 +422,10 @@ function formatAction(action) {
     usuario_atualizado: "Usuário atualizado",
     senha_resetada: "Senha resetada",
     venda_registrada: "Venda registrada",
+    venda_atualizada: "Venda atualizada",
+    venda_excluida: "Venda excluida",
+    usuario_excluido: "Usuario excluido",
+    modulo_acesso_atualizado: "Bloqueio de modulo atualizado",
   };
   return labels[action] || action;
 }

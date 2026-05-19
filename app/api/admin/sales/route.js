@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminContext, writeAdminLog } from "../_utils";
+import { getVisibleProfilesById, isAdminRole, requireAdminContext, writeAdminLog } from "../_utils";
 
 function toNumber(value) {
   if (typeof value === "number") return value;
@@ -10,7 +10,7 @@ export async function GET(request) {
   const ctx = await requireAdminContext(request);
   if (ctx.error) return ctx.error;
 
-  const { supabase } = ctx;
+  const { supabase, realProfile } = ctx;
   const { data: sales, error } = await supabase
     .from("vehicle_sales")
     .select("id,vehicle_id,seller_id,quantity,sale_price,customer_name,customer_phone,payment_method,notes,sold_at,created_by,created_date")
@@ -27,12 +27,8 @@ export async function GET(request) {
   const { data: vehicles = [] } = vehicleIds.length
     ? await supabase.from("vehicles").select("id,brand,model,version,price,stock_quantity,status,images").in("id", vehicleIds)
     : { data: [] };
-  const { data: profiles = [] } = userIds.length
-    ? await supabase.from("profiles").select("id,email,nome,role").in("id", userIds)
-    : { data: [] };
-
   const vehiclesById = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]));
-  const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const profilesById = await getVisibleProfilesById(supabase, userIds, realProfile, "id,email,nome,role");
 
   return NextResponse.json({
     sales: (sales || []).map((sale) => ({
@@ -48,7 +44,7 @@ export async function POST(request) {
   const ctx = await requireAdminContext(request);
   if (ctx.error) return ctx.error;
 
-  const { supabase, user: actor, profile } = ctx;
+  const { supabase, actorUser, profile, isSimulating } = ctx;
   const body = await request.json().catch(() => ({}));
   const vehicleId = body.vehicle_id;
   const quantity = Number(body.quantity || 1);
@@ -58,9 +54,9 @@ export async function POST(request) {
     return NextResponse.json({ error: "Informe veículo, quantidade e valor da venda." }, { status: 400 });
   }
 
-  const sellerId = profile.role === "admin" && body.seller_id ? body.seller_id : actor.id;
+  const sellerId = isAdminRole(profile) && body.seller_id ? body.seller_id : profile.id;
   const { data, error } = await supabase.rpc("register_vehicle_sale_admin", {
-    p_actor_id: actor.id,
+    p_actor_id: actorUser.id,
     p_vehicle_id: vehicleId,
     p_seller_id: sellerId,
     p_quantity: quantity,
@@ -75,10 +71,15 @@ export async function POST(request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   await writeAdminLog(supabase, {
-    actorId: actor.id,
+    actorId: actorUser.id,
     targetUserId: sellerId,
     action: "venda_registrada",
-    details: { vehicle_id: vehicleId, quantity, sale_price: salePrice },
+    details: {
+      vehicle_id: vehicleId,
+      quantity,
+      sale_price: salePrice,
+      simulated_user_id: isSimulating ? profile.id : null,
+    },
   });
 
   return NextResponse.json({ sale: data });

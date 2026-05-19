@@ -1,18 +1,43 @@
 import { NextResponse } from "next/server";
-import { requireAdminContext, writeAdminLog } from "../../_utils";
+import { isSuperAdmin, requireAdminContext, writeAdminLog } from "../../_utils";
 
 export async function PATCH(request, { params }) {
   const ctx = await requireAdminContext(request, { adminOnly: true });
   if (ctx.error) return ctx.error;
 
-  const { supabase, user: actor } = ctx;
+  const { supabase, actorUser: actor, realProfile } = ctx;
   const targetId = params.id;
   const body = await request.json().catch(() => ({}));
   const profileUpdates = {};
   const authUpdates = {};
 
+  const { data: targetProfile, error: targetError } = await supabase
+    .from("profiles")
+    .select("id,role")
+    .eq("id", targetId)
+    .single();
+
+  if (targetError || !targetProfile) {
+    return NextResponse.json({ error: "UsuÃ¡rio nÃ£o encontrado." }, { status: 404 });
+  }
+
+  if (targetProfile.role === "super_admin" && !isSuperAdmin(realProfile)) {
+    return NextResponse.json({ error: "UsuÃ¡rio nÃ£o encontrado." }, { status: 404 });
+  }
+
   if (typeof body.nome === "string") profileUpdates.nome = body.nome.trim();
+  if (typeof body.email === "string") {
+    const email = body.email.trim().toLowerCase();
+    if (!email) return NextResponse.json({ error: "E-mail invalido." }, { status: 400 });
+    profileUpdates.email = email;
+    authUpdates.email = email;
+    authUpdates.email_confirm = true;
+  }
   if (body.role === "admin" || body.role === "vendedor") profileUpdates.role = body.role;
+  if (body.role === "super_admin" && isSuperAdmin(realProfile)) profileUpdates.role = body.role;
+  if (profileUpdates.role === "super_admin" && !isSuperAdmin(realProfile)) {
+    return NextResponse.json({ error: "Apenas super admin pode definir esse papel." }, { status: 403 });
+  }
   if (typeof body.active === "boolean") profileUpdates.active = body.active;
   if (typeof body.must_change_password === "boolean") {
     profileUpdates.must_change_password = body.must_change_password;
@@ -58,4 +83,44 @@ export async function PATCH(request, { params }) {
   });
 
   return NextResponse.json({ user: data });
+}
+
+export async function DELETE(request, { params }) {
+  const ctx = await requireAdminContext(request, { adminOnly: true });
+  if (ctx.error) return ctx.error;
+
+  const { supabase, actorUser, realProfile } = ctx;
+  const targetId = params.id;
+
+  if (targetId === actorUser.id) {
+    return NextResponse.json({ error: "Voce nao pode excluir sua propria conta." }, { status: 400 });
+  }
+
+  const { data: targetProfile, error: targetError } = await supabase
+    .from("profiles")
+    .select("id,email,nome,role")
+    .eq("id", targetId)
+    .single();
+
+  if (targetError || !targetProfile) {
+    return NextResponse.json({ error: "Usuario nao encontrado." }, { status: 404 });
+  }
+
+  if (targetProfile.role === "super_admin" && !isSuperAdmin(realProfile)) {
+    return NextResponse.json({ error: "Usuario nao encontrado." }, { status: 404 });
+  }
+
+  await writeAdminLog(supabase, {
+    actorId: actorUser.id,
+    targetUserId: targetId,
+    action: "usuario_excluido",
+    details: { email: targetProfile.email, nome: targetProfile.nome, role: targetProfile.role },
+  });
+
+  const { error: authError } = await supabase.auth.admin.deleteUser(targetId);
+  if (authError) return NextResponse.json({ error: authError.message }, { status: 400 });
+
+  await supabase.from("profiles").delete().eq("id", targetId);
+
+  return NextResponse.json({ ok: true });
 }

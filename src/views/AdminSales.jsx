@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchVehiclesAdmin, VEHICLES_ADMIN_QUERY_KEY } from "@/lib/vehicleQueries";
-import { adminFetch } from "@/lib/adminApi";
+import { adminFetch, downloadAdminFile } from "@/lib/adminApi";
 import { useAuth } from "@/lib/AuthContext";
 import { formatCurrency } from "@/lib/formatters";
 import AdminShell from "@/components/admin/AdminShell";
@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ReceiptText } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Download, Loader2, Pencil, ReceiptText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const todayLocal = () => new Date().toISOString().slice(0, 10);
@@ -24,7 +25,7 @@ export default function AdminSales() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = ["admin", "super_admin"].includes(profile?.role);
   const preselectedVehicle = searchParams.get("veiculo");
 
   const [form, setForm] = useState({
@@ -38,6 +39,9 @@ export default function AdminSales() {
     sold_at: todayLocal(),
     notes: "",
   });
+  const [editSale, setEditSale] = useState(null);
+  const [deleteSale, setDeleteSale] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: vehicles = [] } = useQuery({
     queryKey: VEHICLES_ADMIN_QUERY_KEY,
@@ -47,7 +51,7 @@ export default function AdminSales() {
   const { data: usersPayload } = useQuery({
     queryKey: ["adminUsers"],
     queryFn: () => adminFetch("/api/admin/users"),
-    enabled: isAdmin,
+    enabled: isAdmin && (profile?.role === "super_admin" || profile?.module_access?.usuarios !== false),
   });
 
   const { data: salesPayload, isLoading } = useQuery({
@@ -87,6 +91,31 @@ export default function AdminSales() {
     onError: (error) => toast.error(error.message),
   });
 
+  const updateSaleMutation = useMutation({
+    mutationFn: ({ id, ...payload }) => adminFetch(`/api/admin/sales/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: () => {
+      toast.success("Venda atualizada.");
+      setEditSale(null);
+      queryClient.invalidateQueries({ queryKey: ["adminSales"] });
+      queryClient.invalidateQueries({ queryKey: VEHICLES_ADMIN_QUERY_KEY });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const deleteSaleMutation = useMutation({
+    mutationFn: (id) => adminFetch(`/api/admin/sales/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Venda excluida e estoque restaurado.");
+      setDeleteSale(null);
+      queryClient.invalidateQueries({ queryKey: ["adminSales"] });
+      queryClient.invalidateQueries({ queryKey: VEHICLES_ADMIN_QUERY_KEY });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
   const totals = useMemo(() => {
     return sales.reduce((acc, sale) => {
       acc.quantity += sale.quantity || 0;
@@ -106,8 +135,50 @@ export default function AdminSales() {
     });
   };
 
+  const openEditSale = (sale) => setEditSale({
+    id: sale.id,
+    vehicle_id: sale.vehicle_id,
+    seller_id: sale.seller_id || "",
+    quantity: String(sale.quantity || 1),
+    sale_price: String(sale.sale_price || ""),
+    customer_name: sale.customer_name || "",
+    customer_phone: sale.customer_phone || "",
+    payment_method: sale.payment_method || "",
+    sold_at: sale.sold_at ? new Date(sale.sold_at).toISOString().slice(0, 10) : todayLocal(),
+    notes: sale.notes || "",
+  });
+
+  const submitEditSale = () => {
+    if (!editSale) return;
+    updateSaleMutation.mutate({
+      ...editSale,
+      quantity: Number(editSale.quantity),
+      sold_at: editSale.sold_at ? new Date(`${editSale.sold_at}T12:00:00`).toISOString() : new Date().toISOString(),
+    });
+  };
+
+  const exportSales = async () => {
+    setIsExporting(true);
+    try {
+      await downloadAdminFile("/api/admin/sales/export", "vendas.xlsx");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <AdminShell title="Vendas" subtitle="Registre vendas, acompanhe histórico e mantenha o estoque consistente.">
+    <AdminShell
+      title="Vendas"
+      subtitle="Registre vendas, acompanhe histórico e mantenha o estoque consistente."
+      actions={
+        <Button variant="outline" className="rounded-full h-10 px-4 font-semibold" onClick={exportSales} disabled={isExporting}>
+          {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+          Exportar XLSX
+        </Button>
+      }
+    >
       <div className="grid lg:grid-cols-[380px_1fr] gap-5">
         <form onSubmit={handleSubmit} className="bg-card border border-border/50 rounded-2xl p-5 space-y-4 h-fit">
           <div className="flex items-center gap-3">
@@ -225,6 +296,7 @@ export default function AdminSales() {
                     <TableHead>Vendedor</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
+                    {isAdmin && <TableHead className="text-right">Acoes</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -241,6 +313,18 @@ export default function AdminSales() {
                       </TableCell>
                       <TableCell>{sale.customer_name || "-"}</TableCell>
                       <TableCell className="text-right font-semibold">{formatCurrency(sale.sale_price)}</TableCell>
+                      {isAdmin && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" className="rounded-full" onClick={() => openEditSale(sale)}>
+                              <Pencil className="w-4 h-4 mr-2" /> Editar
+                            </Button>
+                            <Button variant="destructive" size="sm" className="rounded-full" onClick={() => setDeleteSale(sale)}>
+                              <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -249,6 +333,98 @@ export default function AdminSales() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!editSale} onOpenChange={(open) => !open && setEditSale(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar venda</DialogTitle>
+            <DialogDescription>Alteracoes de veiculo ou quantidade ajustam o estoque automaticamente.</DialogDescription>
+          </DialogHeader>
+          {editSale && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Veiculo</Label>
+                <Select value={editSale.vehicle_id} onValueChange={(value) => setEditSale((s) => ({ ...s, vehicle_id: value }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {vehicles.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.brand} {vehicle.model} - estoque {vehicle.stock_quantity ?? 0}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Vendedor</Label>
+                <Select value={editSale.seller_id} onValueChange={(value) => setEditSale((s) => ({ ...s, seller_id: value }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {sellers.map((seller) => (
+                      <SelectItem key={seller.id} value={seller.id}>
+                        {seller.nome || seller.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Quantidade</Label>
+                  <Input type="number" min="1" value={editSale.quantity} onChange={(e) => setEditSale((s) => ({ ...s, quantity: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data</Label>
+                  <Input type="date" value={editSale.sold_at} onChange={(e) => setEditSale((s) => ({ ...s, sold_at: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor</Label>
+                <Input value={editSale.sale_price} onChange={(e) => setEditSale((s) => ({ ...s, sale_price: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Cliente</Label>
+                  <Input value={editSale.customer_name} onChange={(e) => setEditSale((s) => ({ ...s, customer_name: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefone</Label>
+                  <Input value={editSale.customer_phone} onChange={(e) => setEditSale((s) => ({ ...s, customer_phone: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Forma de pagamento</Label>
+                <Input value={editSale.payment_method} onChange={(e) => setEditSale((s) => ({ ...s, payment_method: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Observacoes</Label>
+                <Textarea value={editSale.notes} onChange={(e) => setEditSale((s) => ({ ...s, notes: e.target.value }))} rows={3} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditSale(null)}>Cancelar</Button>
+            <Button onClick={submitEditSale} disabled={updateSaleMutation.isPending}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteSale} onOpenChange={(open) => !open && setDeleteSale(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir venda</DialogTitle>
+            <DialogDescription>
+              Esta acao remove o registro e devolve {deleteSale?.quantity || 0} unidade(s) ao estoque.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteSale(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => deleteSaleMutation.mutate(deleteSale.id)} disabled={deleteSaleMutation.isPending}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }

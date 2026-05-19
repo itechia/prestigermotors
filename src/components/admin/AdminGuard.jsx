@@ -7,8 +7,31 @@ import { ShieldAlert, Home, LogIn } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+const MODULE_BY_PATH = [
+  { prefix: "/admin/veiculos", module: "veiculos" },
+  { prefix: "/admin/veiculo", module: "veiculos" },
+  { prefix: "/admin/vendas", module: "vendas" },
+  { prefix: "/admin/propostas", module: "propostas" },
+  { prefix: "/admin/usuarios", module: "usuarios" },
+  { prefix: "/admin/configuracoes", module: "configuracoes" },
+  { prefix: "/admin", module: "dashboard", exact: true },
+];
+
+function getModuleForPath(pathname) {
+  return MODULE_BY_PATH.find((item) => item.exact ? pathname === item.prefix : pathname.startsWith(item.prefix))?.module;
+}
+
 export default function AdminGuard({ children, adminOnly = false }) {
-  const { isAuthenticated, isLoadingAuth, isLoadingProfile, profile } = useAuth();
+  const {
+    isAuthenticated,
+    isLoadingAuth,
+    isLoadingProfile,
+    profile,
+    authError,
+    logout,
+    isSimulating,
+    stopSimulation,
+  } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -32,9 +55,9 @@ export default function AdminGuard({ children, adminOnly = false }) {
         <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
           <ShieldAlert className="w-9 h-9 text-destructive" />
         </div>
-        <h2 className="font-display font-bold text-2xl md:text-3xl">Área restrita</h2>
+        <h2 className="font-display font-bold text-2xl md:text-3xl">Area restrita</h2>
         <p className="text-muted-foreground mt-2">
-          Esta área é exclusiva para administradores da loja.
+          Esta area e exclusiva para administradores da loja.
         </p>
         <div className="flex gap-3 justify-center mt-6">
           <Button asChild variant="outline" className="rounded-full h-12 px-6 font-semibold">
@@ -52,7 +75,7 @@ export default function AdminGuard({ children, adminOnly = false }) {
     );
   }
 
-  if (!profile?.active) {
+  if (profile?.active === false) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 md:py-20 text-center">
         <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
@@ -60,8 +83,32 @@ export default function AdminGuard({ children, adminOnly = false }) {
         </div>
         <h2 className="font-display font-bold text-2xl md:text-3xl">Acesso bloqueado</h2>
         <p className="text-muted-foreground mt-2">
-          Seu usuário está inativo. Fale com um administrador da loja.
+          Seu usuario esta inativo. Fale com um administrador da loja.
         </p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && !profile) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 md:py-20 text-center">
+        <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
+          <ShieldAlert className="w-9 h-9 text-destructive" />
+        </div>
+        <h2 className="font-display font-bold text-2xl md:text-3xl">Perfil nao carregado</h2>
+        <p className="text-muted-foreground mt-2">
+          Nao foi possivel validar seu perfil administrativo. Entre novamente e, se continuar, confira as variaveis do Supabase na Vercel.
+        </p>
+        {authError && (
+          <p className="text-sm text-destructive mt-3">
+            Detalhe: {authError}
+          </p>
+        )}
+        <div className="flex gap-3 justify-center mt-6">
+          <Button onClick={() => logout("/admin/login")} className="rounded-full h-12 px-6 font-semibold">
+            <LogIn className="w-4 h-4 mr-2" /> Entrar novamente
+          </Button>
+        </div>
       </div>
     );
   }
@@ -74,16 +121,41 @@ export default function AdminGuard({ children, adminOnly = false }) {
     );
   }
 
-  if (adminOnly && profile?.role !== "admin") {
+  const moduleKey = getModuleForPath(pathname);
+  if (moduleKey && profile?.role !== "super_admin" && profile?.module_access?.[moduleKey] === false) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 md:py-20 text-center">
         <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
           <ShieldAlert className="w-9 h-9 text-destructive" />
         </div>
-        <h2 className="font-display font-bold text-2xl md:text-3xl">Permissão insuficiente</h2>
+        <h2 className="font-display font-bold text-2xl md:text-3xl">Modulo bloqueado</h2>
         <p className="text-muted-foreground mt-2">
-          Esta página é exclusiva para administradores.
+          Este modulo nao esta liberado para o seu perfil.
         </p>
+        {isSimulating && (
+          <Button onClick={stopSimulation} className="rounded-full h-12 px-6 font-semibold mt-6">
+            Encerrar simulacao
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (adminOnly && !["admin", "super_admin"].includes(profile?.role)) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 md:py-20 text-center">
+        <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-5">
+          <ShieldAlert className="w-9 h-9 text-destructive" />
+        </div>
+        <h2 className="font-display font-bold text-2xl md:text-3xl">Permissao insuficiente</h2>
+        <p className="text-muted-foreground mt-2">
+          Esta pagina e exclusiva para administradores.
+        </p>
+        {isSimulating && (
+          <Button onClick={stopSimulation} className="rounded-full h-12 px-6 font-semibold mt-6">
+            Encerrar simulacao
+          </Button>
+        )}
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { SettingsSection, TextField, TextAreaField } from "../SettingsField";
 import LogoUploadField from "../LogoUploadField";
 import FontSelectField from "../FontSelectField";
 import HeaderPreview from "../HeaderPreview";
+import { Switch } from "@/components/ui/switch";
 
 export default function SettingsGeneral({ form, update }) {
   return (
@@ -74,6 +75,19 @@ export default function SettingsGeneral({ form, update }) {
           placeholder="Rua, número, cidade"
           rows={2}
         />
+      </SettingsSection>
+
+      <SettingsSection title="Paginas publicas" desc="Controle quais paginas ficam disponiveis no site">
+        <label className="flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-secondary/30 px-4 py-3">
+          <div>
+            <div className="text-sm font-medium">Pagina vender</div>
+            <div className="text-xs text-muted-foreground">Exibe ou oculta a pagina publica para clientes enviarem veiculos.</div>
+          </div>
+          <Switch
+            checked={form.sell_page_enabled !== false}
+            onCheckedChange={(checked) => update("sell_page_enabled", checked)}
+          />
+        </label>
       </SettingsSection>
     </>
   );

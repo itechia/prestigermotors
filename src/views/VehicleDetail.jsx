@@ -172,7 +172,7 @@ export default function VehicleDetail() {
                   key="embed"
                   srcDoc={embedHtml}
                   title={`${vehicle.brand} ${vehicle.model} 360°`}
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts allow-forms allow-popups"
                   scrolling="no"
                   className="vehicle-detail-gallery-media absolute inset-0 w-full h-full border-0 block"
                 />
@@ -771,7 +771,7 @@ function FullscreenViewer({ slides, initialSlide, onClose }) {
         /* Embed 360° — ocupa tela inteira, totalmente interativo */
         <iframe
           srcDoc={current.html}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts allow-forms allow-popups"
           scrolling="no"
           style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
         />

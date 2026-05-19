@@ -12,6 +12,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { adminFetch } from "@/lib/adminApi";
 
 function Section({ title, desc, icon: Icon, children }) {
   return (
@@ -62,9 +63,8 @@ function WebhookCard({
     setTesting(true);
     setLastResult(null);
     try {
-      const response = await fetch("/api/test-webhook", {
+      const data = await adminFetch("/api/test-webhook", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind,
           url,
@@ -73,7 +73,6 @@ function WebhookCard({
           auth_pass: authPass,
         }),
       });
-      const data = await response.json().catch(() => ({}));
       setLastResult(data);
       if (data.ok) {
         toast.success(`Webhook respondeu com status ${data.status}`);
