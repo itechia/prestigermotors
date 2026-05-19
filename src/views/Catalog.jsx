@@ -11,11 +11,13 @@ import VehicleCard from "../components/vehicles/VehicleCard";
 import Reviews from "../components/vehicles/Reviews";
 import { slugify } from "@/lib/useTaxonomies";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { toInterestDefaults, useLeadPrefillFromLocation } from "@/lib/prefillParams";
 
 const FEATURED_LIMIT = 8;
 const REGULAR_LIMIT  = 16;
 
 export default function Catalog() {
+  const leadPrefill = useLeadPrefillFromLocation();
   const [search, setSearch] = useState("");
   // Multiple brands can be selected at once; empty array = "Todas".
   const [selectedBrands, setSelectedBrands] = useState([]);
@@ -39,6 +41,11 @@ export default function Catalog() {
     queryKey: VEHICLES_QUERY_KEY,
     queryFn: fetchVehiclesCatalog,
   });
+
+  const interestDefaults = useMemo(
+    () => toInterestDefaults(leadPrefill),
+    [leadPrefill]
+  );
 
   const filtered = useMemo(() => {
     return vehicles.filter((v) => {
@@ -127,7 +134,7 @@ export default function Catalog() {
                 <SectionHeader title="Em destaque" subtitle="Seleção especial da nossa loja" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                   {featured.slice(0, featuredVisible).map((v, i) => (
-                    <VehicleCard key={v.id} vehicle={v} index={i} />
+                    <VehicleCard key={v.id} vehicle={v} index={i} leadPrefill={leadPrefill} defaultValues={interestDefaults} />
                   ))}
                 </div>
                 {featured.length > FEATURED_LIMIT && (
@@ -150,7 +157,7 @@ export default function Catalog() {
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                   {regular.slice(0, regularVisible).map((v, i) => (
-                    <VehicleCard key={v.id} vehicle={v} index={i} />
+                    <VehicleCard key={v.id} vehicle={v} index={i} leadPrefill={leadPrefill} defaultValues={interestDefaults} />
                   ))}
                 </div>
                 {regular.length > REGULAR_LIMIT && (

@@ -31,14 +31,32 @@ const INITIAL = {
   images: [],
 };
 
-export default function SellLeadForm() {
-  const [form, setForm] = useState(INITIAL);
+function buildInitial(defaultValues = {}) {
+  return {
+    ...INITIAL,
+    owner_name: defaultValues.name || "",
+    owner_phone: defaultValues.phone || "",
+    owner_phone_confirm: defaultValues.phone || "",
+  };
+}
+
+export default function SellLeadForm({ defaultValues = {} }) {
+  const [form, setForm] = useState(() => buildInitial(defaultValues));
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const successRef = useRef(null);
 
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      owner_name: current.owner_name || defaultValues.name || "",
+      owner_phone: current.owner_phone || defaultValues.phone || "",
+      owner_phone_confirm: current.owner_phone_confirm || defaultValues.phone || "",
+    }));
+  }, [defaultValues]);
 
   // After success, scroll to the success card so the user clearly sees the confirmation
   useEffect(() => {
@@ -151,7 +169,7 @@ export default function SellLeadForm() {
         </p>
         <Button
           onClick={() => {
-            setForm(INITIAL);
+            setForm(buildInitial(defaultValues));
             setDone(false);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}

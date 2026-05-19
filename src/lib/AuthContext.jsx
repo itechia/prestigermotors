@@ -13,6 +13,33 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings]             = useState(false);
   const [authError, setAuthError]             = useState(null);
   const [authChecked, setAuthChecked]         = useState(false);
+  const [profile, setProfile]                 = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
+  const loadProfile = async (session) => {
+    if (!session?.access_token) {
+      setProfile(null);
+      return null;
+    }
+
+    setIsLoadingProfile(true);
+    try {
+      const response = await fetch("/api/admin/me", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Falha ao carregar perfil.");
+      setProfile(payload.profile || null);
+      setAuthError(null);
+      return payload.profile || null;
+    } catch (error) {
+      setProfile(null);
+      setAuthError(error.message);
+      return null;
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   useEffect(() => {
     // Carrega sessão existente ao montar
@@ -21,6 +48,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(!!session?.user);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      if (session?.user) loadProfile(session);
     });
 
     // Escuta mudanças de sessão (login / logout em outra aba, refresh de token)
@@ -30,6 +58,8 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setAuthChecked(true);
       setAuthError(null);
+      if (session?.user) loadProfile(session);
+      else setProfile(null);
     });
 
     return () => subscription.unsubscribe();
@@ -49,9 +79,11 @@ export const AuthProvider = ({ children }) => {
 
   // checkUserAuth mantido para compatibilidade com AdminGuard
   const checkUserAuth = async () => {
-    const { data: { user: u } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const u = session?.user ?? null;
     setUser(u ?? null);
     setIsAuthenticated(!!u);
+    if (session?.user) await loadProfile(session);
   };
 
   return (
@@ -62,6 +94,12 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings,
       authError,
       authChecked,
+      profile,
+      isLoadingProfile,
+      reloadProfile: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return loadProfile(session);
+      },
       logout,
       navigateToLogin,
       checkUserAuth,

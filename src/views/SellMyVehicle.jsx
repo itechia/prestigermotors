@@ -2,8 +2,11 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { DollarSign, ShieldCheck, Clock, ArrowRight } from "lucide-react";
 import SellLeadForm from "../components/sell/SellLeadForm";
+import { useLeadPrefillFromLocation } from "@/lib/prefillParams";
 
 export default function SellMyVehicle() {
+  const leadPrefill = useLeadPrefillFromLocation();
+
   // Always start at the top so the user sees the hero/intro on entry
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -37,7 +40,7 @@ export default function SellMyVehicle() {
         <Pill icon={DollarSign} title="Pagamento ágil" desc="Negociamos à vista ou em troca" />
       </div>
 
-      <SellLeadForm />
+      <SellLeadForm defaultValues={leadPrefill} />
 
       <div className="text-center mt-6 text-xs text-muted-foreground flex items-center justify-center gap-1">
         Ao enviar, você concorda em ser contactado pela equipe da loja

@@ -9,6 +9,7 @@ const CATALOG_COLS = [
   "price", "price_old",
   "images", "has_embed",
   "featured", "status", "hidden",
+  "stock_quantity",
   "vehicle_type", "body_type", "fuel_type",
   "transmission", "condition", "color",
   "created_date",

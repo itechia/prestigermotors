@@ -37,6 +37,39 @@ export function buildVehicleWhatsAppMessage(vehicle) {
   return lines.join("\n");
 }
 
+export function buildVehicleShareText(vehicle, settings = {}, { includeUrl = false } = {}) {
+  if (!vehicle) return "";
+
+  const storeName = settings.store_name || "loja";
+  const title = `${vehicle.brand || ""} ${vehicle.model || ""}`.trim();
+  const version = vehicle.version ? ` ${vehicle.version}` : "";
+  const yearStr = formatYear(vehicle.manufacture_year, vehicle.year);
+  const specs = [
+    yearStr ? `Ano ${yearStr}` : "",
+    vehicle.mileage ? formatMileage(vehicle.mileage) : "",
+    vehicle.fuel_type || "",
+    vehicle.transmission || "",
+  ].filter(Boolean);
+
+  const lines = [
+    `Olha o que eu encontrei no site da ${storeName}:`,
+    "",
+    `${title}${version}`,
+  ];
+
+  if (specs.length) lines.push(specs.join(" • "));
+  if (vehicle.price) lines.push(formatCurrency(vehicle.price));
+  if (includeUrl) {
+    const url = buildVehicleUrl(vehicle);
+    if (url) {
+      lines.push("");
+      lines.push(url);
+    }
+  }
+
+  return lines.join("\n");
+}
+
 // Returns the full https://wa.me/... URL ready to be opened.
 export function buildWhatsAppHref(whatsappNumber, vehicle) {
   const number = String(whatsappNumber || "").replace(/\D/g, "");

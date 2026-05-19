@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import AdminSettingsComponent from '@/views/AdminSettings';
+import AdminGuard from '@/components/admin/AdminGuard';
 
 function PageLoader() {
   return (
@@ -13,8 +14,10 @@ function PageLoader() {
 
 export default function AdminSettingsPage() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <AdminSettingsComponent />
-    </Suspense>
+    <AdminGuard adminOnly>
+      <Suspense fallback={<PageLoader />}>
+        <AdminSettingsComponent />
+      </Suspense>
+    </AdminGuard>
   );
 }

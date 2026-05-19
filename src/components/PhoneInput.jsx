@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,6 +37,11 @@ export default function PhoneInput({ value = "", onChange, placeholder, required
   const [local, setLocal] = useState(initial.local);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+
+  useEffect(() => {
+    setCountry(initial.country);
+    setLocal(initial.local);
+  }, [initial.country, initial.local]);
 
   const update = (nextCountry, nextLocal) => {
     setCountry(nextCountry);

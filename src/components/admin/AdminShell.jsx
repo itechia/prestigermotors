@@ -9,6 +9,8 @@ import {
   Settings,
   ExternalLink,
   Inbox,
+  ReceiptText,
+  Users,
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
@@ -21,12 +23,15 @@ import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdminGuard from "./AdminGuard";
+import { useAuth } from "@/lib/AuthContext";
 
 const NAV = [
   { to: "/admin", label: "Visão geral", icon: LayoutDashboard, end: true },
   { to: "/admin/veiculos", label: "Veículos", icon: Car },
+  { to: "/admin/vendas", label: "Vendas", icon: ReceiptText },
   { to: "/admin/propostas", label: "Propostas", icon: Inbox },
-  { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
+  { to: "/admin/usuarios", label: "Usuários", icon: Users, adminOnly: true },
+  { to: "/admin/configuracoes", label: "Configurações", icon: Settings, adminOnly: true },
 ];
 
 const STORAGE_KEY = "admin_sidebar_collapsed";
@@ -60,6 +65,8 @@ function NavItem({ item, collapsed, onClick }) {
 export default function AdminShell({ children, title, subtitle, actions }) {
   const router = useRouter();
   const settings = useStoreSettings();
+  const { profile } = useAuth();
+  const navItems = NAV.filter((item) => !item.adminOnly || profile?.role === "admin");
 
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -138,7 +145,7 @@ export default function AdminShell({ children, title, subtitle, actions }) {
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            {NAV.map((item) => (
+            {navItems.map((item) => (
               <NavItem key={item.to} item={item} collapsed={collapsed} />
             ))}
           </nav>
@@ -197,7 +204,7 @@ export default function AdminShell({ children, title, subtitle, actions }) {
                 </span>
               </div>
               <nav className="flex-1 px-3 py-4 space-y-1">
-                {NAV.map((item) => (
+                {navItems.map((item) => (
                   <NavItem
                     key={item.to}
                     item={item}

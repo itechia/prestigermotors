@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,9 +21,10 @@ import { buildResolvers } from "@/lib/taxLabels";
 import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
-import { buildWhatsAppHref } from "@/lib/whatsappMessage";
+import { buildVehicleShareText, buildWhatsAppHref } from "@/lib/whatsappMessage";
 import { fetchVehicleDetail, fetchVehicleEmbed, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
 import { imgUrl } from "@/lib/imgUrl";
+import { getLeadPrefillFromSearchParams, toInterestDefaults } from "@/lib/prefillParams";
 
 export default function VehicleDetail() {
   const { id } = useParams();
@@ -37,7 +38,14 @@ export default function VehicleDetail() {
   const [thumbOffset, setThumbOffset] = useState(0);
   const [interestOpen, setInterestOpen] = useState(false);
   const [fsSlide, setFsSlide] = useState(null);
-  const autoOpenedRef = useRef(false);
+  const leadPrefill = useMemo(
+    () => getLeadPrefillFromSearchParams(searchParams),
+    [searchParams]
+  );
+  const urlFormDefaults = useMemo(
+    () => toInterestDefaults(leadPrefill),
+    [leadPrefill]
+  );
 
   // Always start at the top and reset gallery when opening a vehicle
   useEffect(() => {
@@ -45,18 +53,6 @@ export default function VehicleDetail() {
     setThumbOffset(0);
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [id]);
-
-  // Auto-open the interest form when URL has pre-filled params (link-sharing feature).
-  useEffect(() => {
-    if (autoOpenedRef.current) return;
-    const nome = searchParams.get("nome") || "";
-    const tel = searchParams.get("tel") || "";
-    if (!nome && !tel) return;
-    if (settings.interest_webhook_enabled) {
-      autoOpenedRef.current = true;
-      setInterestOpen(true);
-    }
-  }, [settings.interest_webhook_enabled, searchParams]);
 
   // Mantém a janela de thumbnails visível ao redor do slide ativo.
   // Deve ficar antes dos early returns para não violar a rules-of-hooks.
@@ -122,12 +118,15 @@ export default function VehicleDetail() {
 
   const handleShare = async () => {
     const url = window.location.href;
+    const title = `${vehicle.brand} ${vehicle.model}`.trim();
+    const text = buildVehicleShareText(vehicle, settings);
+    const clipboardText = buildVehicleShareText(vehicle, settings, { includeUrl: true });
     try {
       if (navigator.share) {
-        await navigator.share({ title: `${vehicle.brand} ${vehicle.model}`, url });
+        await navigator.share({ title, text, url });
       } else {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copiado!");
+        await navigator.clipboard.writeText(clipboardText);
+        toast.success("Mensagem de compartilhamento copiada!");
       }
     } catch {}
   };
@@ -135,18 +134,6 @@ export default function VehicleDetail() {
   // Rich WhatsApp message: title + specs + price + direct link to the vehicle.
   // The link generates a preview card with cover image (Mercado Livre style).
   const whatsappHref = buildWhatsAppHref(settings.whatsapp_number, vehicle);
-
-  // Build pre-filled form values from URL params (?nome=...&tel=...).
-  // Used when sharing a link that should open the interest form pre-populated.
-  const urlFormDefaults = (() => {
-    const nome = searchParams.get("nome") || "";
-    const tel = searchParams.get("tel") || "";
-    if (!nome && !tel) return {};
-    const d = {};
-    if (nome) d.name = nome;
-    if (tel) { d.phone = tel; d.phone__confirm = tel; }
-    return d;
-  })();
 
   // When the interest webhook is active, the "Tenho interesse" CTA opens the
   // customizable form modal instead of jumping straight to WhatsApp.
@@ -197,6 +184,12 @@ export default function VehicleDetail() {
                 >
                   <Maximize2 className="w-4 h-4" />
                 </button>
+                <div className="absolute bottom-3 left-3 z-10 pointer-events-none">
+                  <span className="vehicle-360-indicator">
+                    <span className="vehicle-360-ring" aria-hidden="true" />
+                    <span className="vehicle-360-text">360°</span>
+                  </span>
+                </div>
               </>
             ) : showingEmbed ? (
               <EmbedLoadingPreview
@@ -511,7 +504,7 @@ export default function VehicleDetail() {
       </div>
 
       {/* Similar vehicles */}
-      <SimilarVehicles vehicle={vehicle} />
+      <SimilarVehicles vehicle={vehicle} leadPrefill={leadPrefill} defaultValues={urlFormDefaults} />
 
       {/* Sticky mobile CTA */}
       {vehicle.status !== "vendido" && (

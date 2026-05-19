@@ -20,7 +20,7 @@ function scoreSimilar(target, v) {
   return score;
 }
 
-export default function SimilarVehicles({ vehicle }) {
+export default function SimilarVehicles({ vehicle, leadPrefill = {}, defaultValues = {} }) {
   const scrollerRef = useRef(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -113,7 +113,12 @@ export default function SimilarVehicles({ vehicle }) {
             key={v.id}
             className="snap-start flex-shrink-0 w-[78%] sm:w-[46%] lg:w-[31%] xl:w-[23.5%]"
           >
-            <VehicleCard vehicle={v} index={i} />
+            <VehicleCard
+              vehicle={v}
+              index={i}
+              leadPrefill={leadPrefill}
+              defaultValues={defaultValues}
+            />
           </div>
         ))}
       </div>

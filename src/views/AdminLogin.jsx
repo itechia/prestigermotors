@@ -30,7 +30,7 @@ export default function AdminLogin() {
       const redirect = searchParams.get("redirect") || "/admin";
       router.replace(redirect);
     }
-  }, [isAuthenticated, isLoadingAuth, navigate, searchParams]);
+  }, [isAuthenticated, isLoadingAuth, router, searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,7 +46,7 @@ export default function AdminLogin() {
       return;
     }
     const redirect = searchParams.get("redirect") || "/admin";
-    navigate(redirect, { replace: true });
+    router.replace(redirect);
   };
 
   if (isLoadingAuth) {

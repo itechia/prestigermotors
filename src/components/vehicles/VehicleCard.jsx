@@ -10,8 +10,9 @@ import InterestFormDialog from "@/components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
 import { imgUrl } from "@/lib/imgUrl";
 import { fetchVehicleDetail } from "@/lib/vehicleQueries";
+import { withLeadPrefill } from "@/lib/prefillParams";
 
-function VehicleCard({ vehicle, index = 0 }) {
+function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} }) {
   const settings = useStoreSettings();
   const queryClient = useQueryClient();
   const [interestOpen, setInterestOpen] = useState(false);
@@ -23,7 +24,7 @@ function VehicleCard({ vehicle, index = 0 }) {
   const hasDiscount = Boolean(vehicle.price_old && vehicle.price_old > vehicle.price);
   const savings = hasDiscount ? vehicle.price_old - vehicle.price : 0;
   const discountPct = hasDiscount ? Math.round((savings / vehicle.price_old) * 100) : 0;
-  const detailHref = `/veiculo/${vehicle.id}`;
+  const detailHref = withLeadPrefill(`/veiculo/${vehicle.id}`, leadPrefill);
 
   const prefetchDetail = () => {
     queryClient.prefetchQuery({
@@ -157,6 +158,7 @@ function VehicleCard({ vehicle, index = 0 }) {
         open={interestOpen}
         onOpenChange={setInterestOpen}
         vehicle={vehicle}
+        defaultValues={defaultValues}
       />
     </div>
   );

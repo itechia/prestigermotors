@@ -13,6 +13,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import BrandHead from "@/components/BrandHead";
 import SiteFooter from "@/components/SiteFooter";
 import { getStoreNameFontStyle } from "@/lib/fonts";
+import { useLeadPrefillFromLocation, withLeadPrefill } from "@/lib/prefillParams";
 
 export default function Layout({ children }) {
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export default function Layout({ children }) {
   });
 
   const isAdmin = me?.role === "admin";
+  const leadPrefill = useLeadPrefillFromLocation();
 
   const navItems = [
     { to: "/", label: "Catálogo", icon: Home },
@@ -46,7 +48,7 @@ export default function Layout({ children }) {
       {/* Top Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50 pt-safe">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2 group min-w-0">
+          <Link href={withLeadPrefill("/", leadPrefill)} className="flex items-center gap-2 group min-w-0">
             {settings.logo_url ? (
               <img
                 src={settings.logo_url}
@@ -76,7 +78,7 @@ export default function Layout({ children }) {
               return (
                 <Link
                   key={item.to}
-                  href={item.to}
+                  href={withLeadPrefill(item.to, leadPrefill)}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2",
                     active
@@ -128,7 +130,7 @@ export default function Layout({ children }) {
               return (
                 <Link
                   key={item.to}
-                  href={item.to}
+                  href={withLeadPrefill(item.to, leadPrefill)}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 transition-colors",
                     active ? "text-primary" : "text-muted-foreground"

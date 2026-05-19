@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,10 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
   const [values, setValues] = useState(defaultValues);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (open) setValues(defaultValues);
+  }, [open, defaultValues]);
 
   const setField = (key, val) => setValues((v) => ({ ...v, [key]: val }));
 

@@ -168,9 +168,30 @@
     object-position: center center;
   }
 
-  @keyframes vehicle-360-ring {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  @keyframes vehicle-360-orbit {
+    0% {
+      transform: translateX(-15px) scale(0.72);
+      opacity: 0.35;
+    }
+    25% {
+      opacity: 0.9;
+    }
+    50% {
+      transform: translateX(15px) scale(1);
+      opacity: 1;
+    }
+    75% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translateX(-15px) scale(0.72);
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes vehicle-360-glow {
+    0%, 100% { opacity: 0.18; }
+    50% { opacity: 0.42; }
   }
 
   .vehicle-360-indicator {
@@ -178,12 +199,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 42px;
-    height: 24px;
-    padding: 0 9px;
+    min-width: 48px;
+    height: 26px;
+    padding: 0 10px;
     border-radius: 999px;
     color: #fff;
-    background: rgba(15, 23, 42, 0.68);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.58));
     border: 1px solid rgba(255, 255, 255, 0.22);
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
     overflow: hidden;
@@ -193,11 +214,36 @@
 
   .vehicle-360-ring {
     position: absolute;
-    inset: 3px;
+    left: 6px;
+    right: 6px;
+    top: 5px;
+    bottom: 5px;
     border-radius: 999px;
-    border: 1.5px solid rgba(255, 255, 255, 0.28);
-    border-top-color: hsl(var(--accent));
-    animation: vehicle-360-ring 2.4s linear infinite;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+  }
+
+  .vehicle-360-ring::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    margin-top: -3.5px;
+    border-radius: 999px;
+    background: hsl(var(--accent));
+    box-shadow: 0 0 10px hsl(var(--accent) / 0.85);
+    animation: vehicle-360-orbit 2.15s ease-in-out infinite;
+  }
+
+  .vehicle-360-ring::after {
+    content: "";
+    position: absolute;
+    inset: 1px 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+    animation: vehicle-360-glow 2.15s ease-in-out infinite;
   }
 
   .vehicle-360-text {
