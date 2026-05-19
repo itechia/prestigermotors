@@ -14,7 +14,7 @@ export async function GET(request) {
     .eq("id", actorUser.id);
 
   const moduleAccess = await getModuleAccessMap(supabase);
-  const effectiveModuleAccess = moduleAccess[profile.role] || {};
+  const effectiveModuleAccess = moduleAccess || {};
 
   return NextResponse.json({
     profile: {
