@@ -50,6 +50,10 @@ export async function getModuleAccessMap(supabase) {
   return access;
 }
 
+export function getDefaultModuleAccessMap() {
+  return Object.fromEntries(ADMIN_MODULES.map((moduleKey) => [moduleKey, true]));
+}
+
 export async function canAccessModule(supabase, profile, moduleKey) {
   if (!moduleKey || isSuperAdmin(profile)) return true;
   const access = await getModuleAccessMap(supabase);
@@ -70,11 +74,15 @@ export async function requireAdminContext(request, { adminOnly = false, superAdm
     return { error: NextResponse.json({ error: "Sessao invalida" }, { status: 401 }) };
   }
 
-  const { data: realProfile } = await supabase
+  const { data: realProfile, error: profileError } = await supabase
     .from("profiles")
     .select("id,email,nome,role,active,must_change_password")
     .eq("id", user.id)
     .single();
+
+  if (profileError) {
+    return { error: NextResponse.json({ error: `Falha ao carregar perfil: ${profileError.message}` }, { status: 500 }) };
+  }
 
   if (!realProfile?.active) {
     return { error: NextResponse.json({ error: "Usuario inativo" }, { status: 403 }) };

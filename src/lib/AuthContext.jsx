@@ -36,7 +36,9 @@ export const AuthProvider = ({ children }) => {
         },
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Falha ao carregar perfil.");
+      if (!response.ok) {
+        throw new Error(payload.detail || payload.error || `Falha ao carregar perfil (${response.status}).`);
+      }
       setProfile(payload.profile || null);
       setRealProfile(payload.real_profile || payload.profile || null);
       setSimulation(payload.simulation || null);

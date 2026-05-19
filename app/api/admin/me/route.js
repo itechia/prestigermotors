@@ -1,36 +1,47 @@
 import { NextResponse } from "next/server";
-import { getModuleAccessMap, requireAdminContext } from "../_utils";
+import { getDefaultModuleAccessMap, getModuleAccessMap, requireAdminContext } from "../_utils";
 
 export async function GET(request) {
-  const ctx = await requireAdminContext(request);
-  if (ctx.error) return ctx.error;
+  try {
+    const ctx = await requireAdminContext(request);
+    if (ctx.error) return ctx.error;
 
-  const { supabase, actorUser, profile, realProfile, isSimulating } = ctx;
-  const now = new Date().toISOString();
+    const { supabase, actorUser, profile, realProfile, isSimulating } = ctx;
+    const now = new Date().toISOString();
 
-  await supabase
-    .from("profiles")
-    .update({ last_login_at: now, updated_date: now })
-    .eq("id", actorUser.id);
+    await supabase
+      .from("profiles")
+      .update({ last_login_at: now, updated_date: now })
+      .eq("id", actorUser.id);
 
-  const moduleAccess = await getModuleAccessMap(supabase);
-  const effectiveModuleAccess = moduleAccess || {};
+    let moduleAccess = getDefaultModuleAccessMap();
+    try {
+      moduleAccess = await getModuleAccessMap(supabase);
+    } catch {
+      moduleAccess = getDefaultModuleAccessMap();
+    }
 
-  return NextResponse.json({
-    profile: {
-      ...profile,
-      last_login_at: isSimulating ? profile.last_login_at : now,
-      module_access: effectiveModuleAccess,
-    },
-    real_profile: {
-      ...realProfile,
-      last_login_at: now,
-    },
-    module_access: moduleAccess,
-    simulation: isSimulating
-      ? { active: true, user_id: profile.id, nome: profile.nome, email: profile.email, role: profile.role }
-      : null,
-  });
+    return NextResponse.json({
+      profile: {
+        ...profile,
+        last_login_at: isSimulating ? profile.last_login_at : now,
+        module_access: moduleAccess,
+      },
+      real_profile: {
+        ...realProfile,
+        last_login_at: now,
+      },
+      module_access: moduleAccess,
+      simulation: isSimulating
+        ? { active: true, user_id: profile.id, nome: profile.nome, email: profile.email, role: profile.role }
+        : null,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      error: "Falha ao carregar perfil administrativo.",
+      detail: error?.message || "Erro inesperado no servidor.",
+    }, { status: 500 });
+  }
 }
 
 export async function PATCH(request) {
