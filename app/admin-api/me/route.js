@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
-import { getDefaultModuleAccessMap, getModuleAccessMap, requireAdminContext } from "../../api/admin/_utils";
+
+function hasBearerToken(request) {
+  const auth = request.headers.get("authorization") || "";
+  return auth.startsWith("Bearer ") && auth.slice(7).trim().length > 0;
+}
+
+async function loadAdminUtils() {
+  return import("../../api/admin/_utils");
+}
 
 export async function GET(request) {
+  if (!hasBearerToken(request)) {
+    return NextResponse.json({ error: "Nao autenticado" }, { status: 401 });
+  }
+
   try {
+    const { getDefaultModuleAccessMap, getModuleAccessMap, requireAdminContext } = await loadAdminUtils();
     const ctx = await requireAdminContext(request);
     if (ctx.error) return ctx.error;
 
@@ -45,7 +58,12 @@ export async function GET(request) {
 }
 
 export async function PATCH(request) {
+  if (!hasBearerToken(request)) {
+    return NextResponse.json({ error: "Nao autenticado" }, { status: 401 });
+  }
+
   try {
+    const { requireAdminContext } = await loadAdminUtils();
     const ctx = await requireAdminContext(request);
     if (ctx.error) return ctx.error;
 
