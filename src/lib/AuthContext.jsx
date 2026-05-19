@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
     setIsLoadingProfile(true);
     try {
-      const response = await fetch("/api/admin/me", {
+      const response = await fetch("/admin-api/me", {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           ...(getSimulatedUserId() ? { "X-Simulated-User-Id": getSimulatedUserId() } : {}),

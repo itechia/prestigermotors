@@ -39,7 +39,7 @@ export default function AdminChangePassword() {
     }
 
     try {
-      await adminFetch("/api/admin/me", {
+      await adminFetch("/admin-api/me", {
         method: "PATCH",
         body: JSON.stringify({ must_change_password: false }),
       });
