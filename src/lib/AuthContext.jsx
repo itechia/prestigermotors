@@ -6,6 +6,19 @@ import { getSimulatedUserId, SIMULATED_USER_STORAGE_KEY } from '@/lib/adminApi';
 
 const AuthContext = createContext();
 
+const ADMIN_MODULES = [
+  "dashboard",
+  "veiculos",
+  "vendas",
+  "propostas",
+  "usuarios",
+  "configuracoes",
+];
+
+function defaultModuleAccess() {
+  return Object.fromEntries(ADMIN_MODULES.map((moduleKey) => [moduleKey, true]));
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser]                     = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,16 +42,27 @@ export const AuthProvider = ({ children }) => {
 
     setIsLoadingProfile(true);
     try {
-      const response = await fetch("/admin-api/me", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          ...(getSimulatedUserId() ? { "X-Simulated-User-Id": getSimulatedUserId() } : {}),
-        },
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
+      let payload = null;
+      let response = null;
+
+      try {
+        response = await fetch("/admin-api/me", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            ...(getSimulatedUserId() ? { "X-Simulated-User-Id": getSimulatedUserId() } : {}),
+          },
+        });
+        payload = await response.json().catch(() => ({}));
+      } catch {
+        payload = await loadProfileFromSupabase(session);
+      }
+
+      if (response && !response.ok && response.status >= 500) {
+        payload = await loadProfileFromSupabase(session);
+      } else if (response && !response.ok) {
         throw new Error(payload.detail || payload.error || `Falha ao carregar perfil (${response.status}).`);
       }
+
       setProfile(payload.profile || null);
       setRealProfile(payload.real_profile || payload.profile || null);
       setSimulation(payload.simulation || null);
@@ -53,6 +77,67 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoadingProfile(false);
     }
+  };
+
+  const loadProfileFromSupabase = async (session) => {
+    const { data: ownProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id,email,nome,role,active,must_change_password,last_login_at")
+      .eq("id", session.user.id)
+      .single();
+
+    if (profileError) {
+      throw new Error(`Falha ao carregar perfil: ${profileError.message}`);
+    }
+    if (!ownProfile?.active) {
+      throw new Error("Usuario inativo");
+    }
+
+    let moduleAccess = defaultModuleAccess();
+    const { data: moduleRows } = await supabase
+      .from("admin_module_access")
+      .select("module_key,enabled")
+      .eq("role", "global");
+
+    for (const row of moduleRows || []) {
+      moduleAccess[row.module_key] = row.enabled !== false;
+    }
+
+    let activeProfile = ownProfile;
+    let simulationInfo = null;
+    const simulatedUserId = getSimulatedUserId();
+
+    if (simulatedUserId && simulatedUserId !== ownProfile.id) {
+      if (ownProfile.role !== "super_admin") {
+        window.localStorage.removeItem(SIMULATED_USER_STORAGE_KEY);
+      } else {
+        const { data: simulatedProfile, error: simulatedError } = await supabase
+          .from("profiles")
+          .select("id,email,nome,role,active,must_change_password,last_login_at")
+          .eq("id", simulatedUserId)
+          .single();
+
+        if (!simulatedError && simulatedProfile?.active && simulatedProfile.role !== "super_admin") {
+          activeProfile = simulatedProfile;
+          simulationInfo = {
+            active: true,
+            user_id: simulatedProfile.id,
+            nome: simulatedProfile.nome,
+            email: simulatedProfile.email,
+            role: simulatedProfile.role,
+          };
+        } else {
+          window.localStorage.removeItem(SIMULATED_USER_STORAGE_KEY);
+        }
+      }
+    }
+
+    return {
+      profile: { ...activeProfile, module_access: moduleAccess },
+      real_profile: ownProfile,
+      module_access: moduleAccess,
+      simulation: simulationInfo,
+    };
   };
 
   useEffect(() => {
