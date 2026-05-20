@@ -1,5 +1,5 @@
 // Catalog page — public store front.
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchVehiclesCatalog, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
 
@@ -24,17 +24,42 @@ export default function Catalog() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [featuredVisible, setFeaturedVisible] = useState(FEATURED_LIMIT);
   const [regularVisible, setRegularVisible]   = useState(REGULAR_LIMIT);
+  const resultsTopRef = useRef(null);
+  const shouldScrollToResultsRef = useRef(false);
 
   const toggleBrand = (name) => {
+    shouldScrollToResultsRef.current = true;
     setSelectedBrands((prev) =>
       prev.includes(name) ? prev.filter((b) => b !== name) : [...prev, name]
     );
+  };
+
+  const clearBrands = () => {
+    shouldScrollToResultsRef.current = true;
+    setSelectedBrands([]);
+  };
+
+  const updateSearch = (value) => {
+    shouldScrollToResultsRef.current = true;
+    setSearch(value);
+  };
+
+  const updateFilters = (nextFilters) => {
+    shouldScrollToResultsRef.current = true;
+    setFilters(nextFilters);
   };
 
   // Reset pagination whenever the user changes any filter, search or brand
   useEffect(() => {
     setFeaturedVisible(FEATURED_LIMIT);
     setRegularVisible(REGULAR_LIMIT);
+
+    if (!shouldScrollToResultsRef.current) return;
+    shouldScrollToResultsRef.current = false;
+
+    window.requestAnimationFrame(() => {
+      resultsTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }, [search, selectedBrands, filters]);
 
   const { data: vehicles = [], isLoading } = useQuery({
@@ -103,26 +128,27 @@ export default function Catalog() {
       </div>
 
       {/* Sticky search + brands — sem margem negativa */}
-      <div className="sticky top-16 z-30 glass border-b border-border/20">
+      <div className="sticky top-16 z-30 border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
           <VehicleFilters
             filters={filters}
-            setFilters={setFilters}
+            setFilters={updateFilters}
             search={search}
-            setSearch={setSearch}
+            setSearch={updateSearch}
             selectedBrands={selectedBrands}
             vehicles={vehicles}
           />
           <BrandPills
             selected={selectedBrands}
             onToggle={toggleBrand}
-            onClear={() => setSelectedBrands([])}
+            onClear={clearBrands}
           />
         </div>
       </div>
 
       {/* Vehicle grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 md:space-y-12 pt-4 md:pt-6 pb-0">
+        <div ref={resultsTopRef} className="scroll-mt-56 md:scroll-mt-48" aria-hidden="true" />
         {isLoading ? (
           <LoadingGrid />
         ) : filtered.length === 0 ? (
