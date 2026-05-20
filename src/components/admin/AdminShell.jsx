@@ -16,12 +16,14 @@ import {
   LogOut,
   ChevronRight,
   UserCheck,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { getStoreNameFontStyle } from "@/lib/fonts";
 import { toast } from "sonner";
 import ThemeToggle from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
 import AdminGuard from "./AdminGuard";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -74,6 +76,13 @@ function NavItem({ item, collapsed, onClick }) {
 export default function AdminShell({ children, title, subtitle, actions }) {
   const settings = useStoreSettings();
   const { profile, realProfile, simulation, isSimulating, stopSimulation, logout } = useAuth();
+  const loggedProfile = realProfile || profile;
+  const loggedName = loggedProfile?.nome || loggedProfile?.email || "Admin";
+  const loggedRole = loggedProfile?.role === "super_admin"
+    ? "Super admin"
+    : loggedProfile?.role === "admin"
+      ? "Admin"
+      : "Vendedor";
   const navItems = NAV.filter((item) => {
     const roleAllowed = !item.adminOnly || ["admin", "super_admin"].includes(profile?.role);
     const moduleKey = MODULE_BY_ROUTE[item.to];
@@ -280,6 +289,13 @@ export default function AdminShell({ children, title, subtitle, actions }) {
             </div>
 
             <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2 min-w-0 rounded-full border border-border/60 bg-background px-3 py-1.5">
+                <UserCircle className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true" />
+                <div className="min-w-0 leading-tight">
+                  <div className="text-xs font-semibold truncate max-w-[180px]">{loggedName}</div>
+                  <div className="text-[10px] text-muted-foreground">{loggedRole}</div>
+                </div>
+              </div>
               <ThemeToggle />
             </div>
           </header>

@@ -31,15 +31,15 @@ export default function AdminUsers() {
 
   const { data: usersPayload, isLoading } = useQuery({
     queryKey: ["adminUsers"],
-    queryFn: () => adminFetch("/api/admin/users"),
+    queryFn: () => adminFetch("/admin-api/users"),
   });
   const { data: logsPayload } = useQuery({
     queryKey: ["adminUserLogs"],
-    queryFn: () => adminFetch("/api/admin/user-logs"),
+    queryFn: () => adminFetch("/admin-api/user-logs"),
   });
   const { data: moduleAccessPayload } = useQuery({
     queryKey: ["adminModuleAccess"],
-    queryFn: () => adminFetch("/api/admin/module-access"),
+    queryFn: () => adminFetch("/admin-api/module-access"),
     enabled: canManageModuleBlocks,
   });
 
@@ -54,7 +54,7 @@ export default function AdminUsers() {
   }), [users]);
 
   const createMutation = useMutation({
-    mutationFn: (payload) => adminFetch("/api/admin/users", {
+    mutationFn: (payload) => adminFetch("/admin-api/users", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
@@ -68,7 +68,7 @@ export default function AdminUsers() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...payload }) => adminFetch(`/api/admin/users/${id}`, {
+    mutationFn: ({ id, ...payload }) => adminFetch(`/admin-api/users/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
@@ -81,7 +81,7 @@ export default function AdminUsers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => adminFetch(`/api/admin/users/${id}`, { method: "DELETE" }),
+    mutationFn: (id) => adminFetch(`/admin-api/users/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Usuario excluido.");
       setDeleteTarget(null);
@@ -92,7 +92,7 @@ export default function AdminUsers() {
   });
 
   const moduleMutation = useMutation({
-    mutationFn: (payload) => adminFetch("/api/admin/module-access", {
+    mutationFn: (payload) => adminFetch("/admin-api/module-access", {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
