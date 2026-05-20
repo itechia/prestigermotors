@@ -28,8 +28,8 @@ function LogoUploader({ value, onChange }) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-10 h-10 rounded-xl border-2 border-dashed border-border bg-secondary/40 flex items-center justify-center overflow-hidden">
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="w-10 h-10 rounded-xl border-2 border-dashed border-border bg-secondary/40 flex items-center justify-center overflow-hidden shrink-0">
         {value ? (
           <img src={value} alt="" className="w-full h-full object-contain p-1" />
         ) : (
@@ -42,7 +42,7 @@ function LogoUploader({ value, onChange }) {
           variant="ghost"
           size="sm"
           onClick={() => onChange("")}
-          className="h-8 px-2 text-xs"
+          className="h-8 px-2 text-xs shrink-0"
         >
           <X className="w-3 h-3 mr-1" /> Remover
         </Button>
@@ -76,23 +76,23 @@ function SocialRow({
 }) {
   const visible = form[visibleKey] !== false;
   return (
-    <div className="flex flex-col sm:flex-row gap-3 sm:items-center bg-secondary/40 rounded-xl px-4 py-3">
-      <div className="sm:w-56 flex items-center justify-between sm:justify-start gap-3">
-        <div className="flex items-center gap-2">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] gap-3 xl:items-start bg-secondary/40 rounded-xl px-4 py-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-center min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <LogoUploader
             value={form[logoKey]}
             onChange={(v) => update(logoKey, v)}
           />
-          <Label className="text-sm font-medium">{label}</Label>
+          <Label className="text-sm font-medium truncate">{label}</Label>
         </div>
         <Switch checked={visible} onCheckedChange={(v) => update(visibleKey, v)} />
       </div>
-      <div className="flex-1 space-y-1">
+      <div className="min-w-0 space-y-1">
         <Input
           value={urlValue || ""}
           onChange={(e) => onUrlChange(e.target.value)}
           placeholder={placeholder}
-          className="rounded-xl bg-background"
+          className="rounded-xl bg-background w-full"
         />
         {helper && <p className="text-[11px] text-muted-foreground">{helper}</p>}
       </div>
