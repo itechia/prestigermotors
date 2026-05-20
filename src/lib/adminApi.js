@@ -7,12 +7,21 @@ export function getSimulatedUserId() {
   return window.localStorage.getItem(SIMULATED_USER_STORAGE_KEY) || "";
 }
 
+function parsePayload(rawBody) {
+  if (!rawBody) return {};
+  try {
+    return JSON.parse(rawBody);
+  } catch {
+    return {};
+  }
+}
+
 export async function adminFetch(path, options = {}) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
 
   if (!token) {
-    throw new Error("Sessão administrativa expirada.");
+    throw new Error("Sessao administrativa expirada.");
   }
 
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
@@ -24,10 +33,16 @@ export async function adminFetch(path, options = {}) {
   };
 
   const response = await fetch(path, { ...options, headers });
-  const payload = await response.json().catch(() => ({}));
+  const rawBody = await response.text().catch(() => "");
+  const payload = parsePayload(rawBody);
 
   if (!response.ok) {
-    throw new Error(payload.error || "Falha na operação administrativa.");
+    throw new Error(
+      payload.detail ||
+      payload.error ||
+      rawBody ||
+      `Falha na operacao administrativa (${response.status}).`
+    );
   }
 
   return payload;
@@ -49,8 +64,9 @@ export async function downloadAdminFile(path, filename) {
   });
 
   if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error || "Falha ao baixar arquivo.");
+    const rawBody = await response.text().catch(() => "");
+    const payload = parsePayload(rawBody);
+    throw new Error(payload.detail || payload.error || rawBody || "Falha ao baixar arquivo.");
   }
 
   const blob = await response.blob();
