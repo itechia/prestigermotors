@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/api/supabaseClient";
 import { adminFetch } from "@/lib/adminApi";
 import { useAuth } from "@/lib/AuthContext";
 import AdminShell from "@/components/admin/AdminShell";
@@ -55,17 +54,15 @@ export default function AdminUsers() {
   }), [users]);
 
   const createMutation = useMutation({
-    mutationFn: async (payload) => {
-      const { data, error } = await supabase.rpc("admin_create_user", {
-        p_email: payload.email,
-        p_password: payload.password,
-        p_nome: payload.nome || "",
-        p_role: payload.role || "vendedor",
-      });
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
+    mutationFn: (payload) => adminFetch("/admin-api/users", {
+      method: "POST",
+      body: JSON.stringify({
+        email: payload.email,
+        password: payload.password,
+        nome: payload.nome || "",
+        role: payload.role || "vendedor",
+      }),
+    }),
     onSuccess: () => {
       toast.success("Usuário criado. Ele trocará a senha no primeiro acesso.");
       setNewUser(emptyUser);
