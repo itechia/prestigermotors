@@ -16,6 +16,16 @@ function parsePayload(rawBody) {
   }
 }
 
+function formatHttpError(response, payload, rawBody) {
+  if (payload.detail || payload.error) {
+    return payload.detail || payload.error;
+  }
+  if (rawBody?.trim().startsWith("<!DOCTYPE")) {
+    return `Servidor retornou erro HTML (${response.status}). Verifique as variaveis e os logs da Function na Vercel.`;
+  }
+  return rawBody || `Falha na operacao administrativa (${response.status}).`;
+}
+
 export async function adminFetch(path, options = {}) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -37,12 +47,7 @@ export async function adminFetch(path, options = {}) {
   const payload = parsePayload(rawBody);
 
   if (!response.ok) {
-    throw new Error(
-      payload.detail ||
-      payload.error ||
-      rawBody ||
-      `Falha na operacao administrativa (${response.status}).`
-    );
+    throw new Error(formatHttpError(response, payload, rawBody));
   }
 
   return payload;
@@ -66,7 +71,7 @@ export async function downloadAdminFile(path, filename) {
   if (!response.ok) {
     const rawBody = await response.text().catch(() => "");
     const payload = parsePayload(rawBody);
-    throw new Error(payload.detail || payload.error || rawBody || "Falha ao baixar arquivo.");
+    throw new Error(formatHttpError(response, payload, rawBody) || "Falha ao baixar arquivo.");
   }
 
   const blob = await response.blob();
