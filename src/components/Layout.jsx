@@ -48,7 +48,10 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-background flex flex-col">
       <BrandHead />
       {/* Top Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border/50 pt-safe">
+      <header className={cn(
+        "z-40 glass border-b border-border/50 pt-safe",
+        isAdminRoute ? "sticky top-0" : "fixed top-0 inset-x-0"
+      )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
           <Link href={withLeadPrefill("/", leadPrefill)} className="flex items-center gap-2 group min-w-0">
             {settings.logo_url ? (
@@ -102,7 +105,7 @@ export default function Layout({ children }) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-safe flex flex-col">
+      <main className={cn("flex-1 px-safe flex flex-col", !isAdminRoute && "pt-16")}>
         <Suspense fallback={
           <div className="flex-1 min-h-[60vh] flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-secondary border-t-primary rounded-full animate-spin"></div>

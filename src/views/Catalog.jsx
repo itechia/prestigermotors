@@ -25,7 +25,11 @@ export default function Catalog() {
   const [featuredVisible, setFeaturedVisible] = useState(FEATURED_LIMIT);
   const [regularVisible, setRegularVisible]   = useState(REGULAR_LIMIT);
   const resultsTopRef = useRef(null);
+  const filtersAnchorRef = useRef(null);
+  const filtersBarRef = useRef(null);
   const shouldScrollToResultsRef = useRef(false);
+  const [filtersFixed, setFiltersFixed] = useState(false);
+  const [filtersHeight, setFiltersHeight] = useState(0);
 
   const toggleBrand = (name) => {
     shouldScrollToResultsRef.current = true;
@@ -61,6 +65,29 @@ export default function Catalog() {
       resultsTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, [search, selectedBrands, filters]);
+
+  useEffect(() => {
+    const measure = () => {
+      setFiltersHeight(filtersBarRef.current?.offsetHeight || 0);
+    };
+
+    const updateFixed = () => {
+      const anchorTop = filtersAnchorRef.current?.getBoundingClientRect().top ?? 0;
+      setFiltersFixed(anchorTop <= 64);
+    };
+
+    measure();
+    updateFixed();
+    window.addEventListener("scroll", updateFixed, { passive: true });
+    window.addEventListener("resize", measure);
+    window.addEventListener("resize", updateFixed);
+
+    return () => {
+      window.removeEventListener("scroll", updateFixed);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("resize", updateFixed);
+    };
+  }, []);
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: VEHICLES_QUERY_KEY,
@@ -128,7 +155,14 @@ export default function Catalog() {
       </div>
 
       {/* Sticky search + brands — sem margem negativa */}
-      <div className="sticky top-16 z-30 border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm">
+      <div ref={filtersAnchorRef} aria-hidden="true" />
+      <div
+        ref={filtersBarRef}
+        className={[
+          "z-30 border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm",
+          filtersFixed ? "fixed top-16 left-0 right-0" : "relative",
+        ].join(" ")}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
           <VehicleFilters
             filters={filters}
@@ -145,6 +179,7 @@ export default function Catalog() {
           />
         </div>
       </div>
+      {filtersFixed && <div style={{ height: filtersHeight }} aria-hidden="true" />}
 
       {/* Vehicle grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 md:space-y-12 pt-4 md:pt-6 pb-0">
