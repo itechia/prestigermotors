@@ -38,7 +38,8 @@
       "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" diff)",
       "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" restore --staged .claude/settings.local.json)",
       "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" log --oneline -3)",
-      "Bash(git -C 'C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884' commit -m ' *)"
+      "Bash(git -C 'C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884' commit -m ' *)",
+      "mcp__claude_ai_Vercel__get_runtime_logs"
     ],
     "additionalDirectories": [
       "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory"
