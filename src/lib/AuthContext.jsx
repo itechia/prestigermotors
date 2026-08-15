@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
       let response = null;
 
       try {
-        response = await fetch("/admin-api/me", {
+        response = await fetch("/api/admin/me", {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             ...(getSimulatedUserId() ? { "X-Simulated-User-Id": getSimulatedUserId() } : {}),

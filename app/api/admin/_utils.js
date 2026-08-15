@@ -31,13 +31,11 @@ export function getModuleFromRequest(request, explicitModule = null) {
   if (explicitModule) return explicitModule;
   const pathname = new URL(request.url).pathname;
   if (pathname === "/api/admin/me") return null;
-  if (pathname === "/admin-api/me") return null;
   if (pathname.startsWith("/api/test-webhook")) return "configuracoes";
-  if (pathname.startsWith("/api/admin/vehicles") || pathname.startsWith("/admin-api/vehicles")) return "veiculos";
-  if (pathname.startsWith("/api/admin/module-access") || pathname.startsWith("/admin-api/module-access")) return "usuarios";
+  if (pathname.startsWith("/api/admin/vehicles")) return "veiculos";
+  if (pathname.startsWith("/api/admin/module-access")) return "usuarios";
   if (pathname.startsWith("/api/admin/users") || pathname.startsWith("/api/admin/user-logs")) return "usuarios";
-  if (pathname.startsWith("/admin-api/users") || pathname.startsWith("/admin-api/user-logs")) return "usuarios";
-  if (pathname.startsWith("/api/admin/sales") || pathname.startsWith("/admin-api/sales")) return "vendas";
+  if (pathname.startsWith("/api/admin/sales")) return "vendas";
   return null;
 }
 

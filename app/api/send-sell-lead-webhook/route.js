@@ -1,108 +1,88 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { postJsonWebhook, readLimitedJson, takeRateLimit } from "../_utils/webhookSecurity";
+
+export const runtime = "nodejs";
+
+const requestSchema = z.object({ lead_id: z.string().uuid() });
+
+const SETTINGS_COLS = [
+  "store_name", "whatsapp_number", "phone_number",
+  "sell_webhook_enabled", "sell_webhook_url",
+  "sell_webhook_auth_enabled", "sell_webhook_auth_user", "sell_webhook_auth_pass",
+].join(",");
+
+const LEAD_COLS = [
+  "id", "owner_name", "owner_email", "owner_phone", "owner_city",
+  "brand", "model", "version", "year", "manufacture_year", "mileage",
+  "fuel_type", "transmission", "color", "condition_notes", "asking_price",
+  "images", "status", "created_date",
+].join(",");
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Servico indisponivel.");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
 function buildAuthHeader(settings) {
-  if (settings.sell_webhook_auth_enabled && settings.sell_webhook_auth_user) {
-    const token = Buffer.from(
-      `${settings.sell_webhook_auth_user}:${settings.sell_webhook_auth_pass || ''}`
-    ).toString('base64');
-    return { Authorization: `Basic ${token}` };
-  }
-  return {};
+  if (!settings.sell_webhook_auth_enabled || !settings.sell_webhook_auth_user) return {};
+  const token = Buffer.from(
+    `${settings.sell_webhook_auth_user}:${settings.sell_webhook_auth_pass || ""}`
+  ).toString("base64");
+  return { Authorization: `Basic ${token}` };
 }
 
 export async function POST(request) {
-  try {
-    const supabase = getSupabase();
-    const body = await request.json().catch(() => ({}));
-    const { lead_id } = body;
+  const rate = takeRateLimit(request);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Muitas tentativas. Aguarde e tente novamente." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfter) } }
+    );
+  }
 
-    if (!lead_id) {
-      return NextResponse.json({ error: 'lead_id é obrigatório' }, { status: 400 });
+  try {
+    const parsed = requestSchema.safeParse(await readLimitedJson(request));
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
     }
 
-    const [{ data: settingsList }, { data: leadList }] = await Promise.all([
-      supabase.from('store_settings').select('*').limit(1),
-      supabase.from('sell_leads').select('*').eq('id', lead_id).limit(1),
+    const supabase = getSupabase();
+    const [{ data: settings }, { data: lead }] = await Promise.all([
+      supabase.from("store_settings").select(SETTINGS_COLS).limit(1).maybeSingle(),
+      supabase.from("sell_leads").select(LEAD_COLS).eq("id", parsed.data.lead_id).maybeSingle(),
     ]);
 
-    const settings = settingsList?.[0];
-    const lead     = leadList?.[0];
-
     if (!settings?.sell_webhook_enabled || !settings?.sell_webhook_url) {
-      return NextResponse.json({ ok: true, skipped: 'Webhook de venda não está ativo' });
+      return NextResponse.json({ ok: true, skipped: true });
     }
     if (!lead) {
-      return NextResponse.json({ error: 'Proposta não encontrada' }, { status: 404 });
+      return NextResponse.json({ error: "Proposta nao encontrada." }, { status: 404 });
     }
 
     const payload = {
-      type: 'sell_lead',
+      type: "sell_lead",
       sent_at: new Date().toISOString(),
       store: {
         name: settings.store_name,
-        whatsapp: settings.whatsapp,
-        phone: settings.phone,
+        whatsapp: settings.whatsapp_number,
+        phone: settings.phone_number,
       },
-      lead: {
-        id: lead.id,
-        owner_name: lead.owner_name,
-        owner_email: lead.owner_email,
-        owner_phone: lead.owner_phone,
-        owner_city: lead.owner_city,
-        brand: lead.brand,
-        model: lead.model,
-        version: lead.version,
-        year: lead.year,
-        manufacture_year: lead.manufacture_year,
-        mileage: lead.mileage,
-        fuel_type: lead.fuel_type,
-        transmission: lead.transmission,
-        color: lead.color,
-        condition_notes: lead.condition_notes,
-        asking_price: lead.asking_price,
-        images: lead.images || [],
-        status: lead.status,
-        created_date: lead.created_date,
-      },
+      lead: { ...lead, images: lead.images || [] },
     };
 
-    const headers = {
-      'Content-Type': 'application/json',
-      ...buildAuthHeader(settings),
-    };
+    const response = await postJsonWebhook(
+      settings.sell_webhook_url,
+      payload,
+      buildAuthHeader(settings)
+    );
 
-    const resp = await fetch(settings.sell_webhook_url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    const text = await resp.text().catch(() => '');
-    return NextResponse.json({
-      ok: resp.ok,
-      status: resp.status,
-      response: text?.slice(0, 500) || null,
-    });
+    return NextResponse.json({ ok: response.ok, status: response.status });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const status = error?.name === "AbortError" ? 504 : 500;
+    return NextResponse.json({ error: "Nao foi possivel enviar a proposta." }, { status });
   }
-}
-
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }

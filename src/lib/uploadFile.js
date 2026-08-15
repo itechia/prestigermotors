@@ -1,5 +1,13 @@
 import { supabase } from "@/api/supabaseClient";
 
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
 function formatBytes(bytes) {
   if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(0)} MB`;
   return `${Math.round(bytes / 1024)} KB`;
@@ -26,8 +34,13 @@ export async function deleteStorageFile(url) {
 }
 
 export async function uploadFile({ file, maxBytes }) {
-  if (maxBytes && file.size > maxBytes) {
-    throw new Error(`Arquivo muito grande. Máximo permitido: ${formatBytes(maxBytes)}.`);
+  const effectiveMaxBytes = maxBytes || MAX_UPLOAD_BYTES;
+  if (file.size > effectiveMaxBytes) {
+    throw new Error(`Arquivo muito grande. Máximo permitido: ${formatBytes(effectiveMaxBytes)}.`);
+  }
+
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new Error("Formato de imagem nao permitido. Use JPG, PNG, WebP ou GIF.");
   }
 
   const ext = file.name.split(".").pop();
@@ -35,11 +48,11 @@ export async function uploadFile({ file, maxBytes }) {
     .replace(/\.[^/.]+$/, "")
     .replace(/[^a-zA-Z0-9]/g, "_")
     .slice(0, 60);
-  const path = `${Date.now()}-${safeName}.${ext}`;
+  const path = `${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
 
   const { error } = await supabase.storage
     .from("uploads")
-    .upload(path, file, { cacheControl: "3600", upsert: false });
+    .upload(path, file, { cacheControl: "31536000", upsert: false });
 
   if (error) throw error;
 

@@ -22,7 +22,7 @@ export default function PageNotFound() {
         <p className="text-muted-foreground leading-relaxed mb-8">
           {pageName ? (
             <>
-              A página <span className="font-medium text-foreground">"/{pageName}"</span> não existe
+              A página <span className="font-medium text-foreground">&ldquo;/{pageName}&rdquo;</span> não existe
               neste aplicativo.
             </>
           ) : (

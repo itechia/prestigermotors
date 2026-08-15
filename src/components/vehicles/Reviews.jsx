@@ -104,7 +104,7 @@ export default function Reviews() {
                 <Star key={j} className="w-3.5 h-3.5 fill-accent text-accent" />
               ))}
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">"{r.text}"</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">&ldquo;{r.text}&rdquo;</p>
             {r.photo && (
               <img
                 src={r.photo}

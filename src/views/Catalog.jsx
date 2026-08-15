@@ -1,3 +1,5 @@
+'use client';
+
 // Catalog page — public store front.
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,7 +18,7 @@ import { toInterestDefaults, useLeadPrefillFromLocation } from "@/lib/prefillPar
 const FEATURED_LIMIT = 8;
 const REGULAR_LIMIT  = 16;
 
-export default function Catalog() {
+export default function Catalog({ initialVehicles = [] }) {
   const leadPrefill = useLeadPrefillFromLocation();
   const [search, setSearch] = useState("");
   // Multiple brands can be selected at once; empty array = "Todas".
@@ -92,6 +94,7 @@ export default function Catalog() {
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: VEHICLES_QUERY_KEY,
     queryFn: fetchVehiclesCatalog,
+    initialData: initialVehicles,
   });
 
   const interestDefaults = useMemo(

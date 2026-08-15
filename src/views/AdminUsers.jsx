@@ -31,15 +31,15 @@ export default function AdminUsers() {
 
   const { data: usersPayload, isLoading } = useQuery({
     queryKey: ["adminUsers"],
-    queryFn: () => adminFetch("/admin-api/users"),
+    queryFn: () => adminFetch("/api/admin/users"),
   });
   const { data: logsPayload } = useQuery({
     queryKey: ["adminUserLogs"],
-    queryFn: () => adminFetch("/admin-api/user-logs"),
+    queryFn: () => adminFetch("/api/admin/user-logs"),
   });
   const { data: moduleAccessPayload } = useQuery({
     queryKey: ["adminModuleAccess"],
-    queryFn: () => adminFetch("/admin-api/module-access"),
+    queryFn: () => adminFetch("/api/admin/module-access"),
     enabled: canManageModuleBlocks,
   });
 
@@ -54,7 +54,7 @@ export default function AdminUsers() {
   }), [users]);
 
   const createMutation = useMutation({
-    mutationFn: (payload) => adminFetch("/admin-api/users", {
+    mutationFn: (payload) => adminFetch("/api/admin/users", {
       method: "POST",
       body: JSON.stringify({
         email: payload.email,
@@ -73,7 +73,7 @@ export default function AdminUsers() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...payload }) => adminFetch(`/admin-api/users/${id}`, {
+    mutationFn: ({ id, ...payload }) => adminFetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
@@ -86,7 +86,7 @@ export default function AdminUsers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => adminFetch(`/admin-api/users/${id}`, { method: "DELETE" }),
+    mutationFn: (id) => adminFetch(`/api/admin/users/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Usuario excluido.");
       setDeleteTarget(null);
@@ -97,7 +97,7 @@ export default function AdminUsers() {
   });
 
   const moduleMutation = useMutation({
-    mutationFn: (payload) => adminFetch("/admin-api/module-access", {
+    mutationFn: (payload) => adminFetch("/api/admin/module-access", {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),

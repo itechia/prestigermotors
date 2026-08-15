@@ -23,10 +23,10 @@ import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
 import { buildVehicleShareText, buildWhatsAppHref } from "@/lib/whatsappMessage";
 import { fetchVehicleDetail, fetchVehicleEmbed, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
-import { imgUrl } from "@/lib/imgUrl";
 import { getLeadPrefillFromSearchParams, toInterestDefaults } from "@/lib/prefillParams";
+import OptimizedImage from "@/components/vehicles/OptimizedImage";
 
-export default function VehicleDetail() {
+export default function VehicleDetail({ initialVehicle = null }) {
   const { id } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -68,6 +68,7 @@ export default function VehicleDetail() {
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ["vehicle", id],
     queryFn: () => fetchVehicleDetail(id),
+    initialData: initialVehicle?.id === id ? initialVehicle : undefined,
     placeholderData: () => {
       const catalog = queryClient.getQueryData(VEHICLES_QUERY_KEY);
       return Array.isArray(catalog) ? catalog.find((v) => v.id === id) : undefined;
@@ -199,13 +200,15 @@ export default function VehicleDetail() {
               />
             ) : (
               <>
-                <img
-                  src={imgUrl(images[imageIndex], { w: 1200, h: 900, q: 78 })}
+                <OptimizedImage
+                  src={images[imageIndex]}
                   alt={vehicle.model}
                   className="vehicle-detail-gallery-media absolute inset-0 w-full h-full cursor-zoom-in"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  quality={78}
+                  priority
                   onClick={() => setFsSlide(activeImage)}
-                  loading="eager"
-                  decoding="async"
                 />
                 <button
                   onClick={() => setFsSlide(activeImage)}
@@ -279,7 +282,7 @@ export default function VehicleDetail() {
                           activeImage === 0 ? "border-primary" : "border-transparent opacity-70"
                         )}
                       >
-                        <img src={imgUrl(images[0], { w: 160, h: 160, q: 70 })} alt="" className="w-full h-full object-cover" />
+                        <OptimizedImage src={images[0]} alt="" className="object-cover" fill sizes="56px" quality={70} />
                         <Mini360Indicator />
                       </button>
                     ) : (
@@ -287,14 +290,17 @@ export default function VehicleDetail() {
                         key={slideIdx}
                         onClick={() => setActiveImage(slideIdx)}
                         className={cn(
-                          "flex-shrink-0 w-14 aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          "relative flex-shrink-0 w-14 aspect-square rounded-xl overflow-hidden border-2 transition-all",
                           activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60"
                         )}
                       >
-                        <img
-                          src={imgUrl(images[imgIdx], { w: 160, h: 160, q: 70 })}
+                        <OptimizedImage
+                          src={images[imgIdx]}
                           alt=""
-                          className="w-full h-full object-cover"
+                          className="object-cover"
+                          fill
+                          sizes="56px"
+                          quality={70}
                         />
                       </button>
                     );
@@ -328,7 +334,7 @@ export default function VehicleDetail() {
                           activeImage === 0 ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
                         )}
                       >
-                        <img src={imgUrl(images[0], { w: 160, h: 160, q: 70 })} alt="" className="w-full h-full object-cover" />
+                        <OptimizedImage src={images[0]} alt="" className="object-cover" fill sizes="160px" quality={70} />
                         <Mini360Indicator />
                       </button>
                     ) : (
@@ -336,14 +342,17 @@ export default function VehicleDetail() {
                         key={imgIdx}
                         onClick={() => setActiveImage(slideIdx)}
                         className={cn(
-                          "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                          "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
                           activeImage === slideIdx ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
                         )}
                       >
-                        <img
-                          src={imgUrl(images[imgIdx], { w: 160, h: 160, q: 70 })}
+                        <OptimizedImage
+                          src={images[imgIdx]}
                           alt=""
-                          className="w-full h-full object-cover"
+                          className="object-cover"
+                          fill
+                          sizes="160px"
+                          quality={70}
                         />
                       </button>
                     );
@@ -566,12 +575,14 @@ function Mini360Indicator() {
 function EmbedLoadingPreview({ src, alt, loading }) {
   return (
     <div className="absolute inset-0">
-      <img
-        src={imgUrl(src, { w: 1200, h: 900, q: 72 })}
+      <OptimizedImage
+        src={src}
         alt={alt}
         className="vehicle-detail-gallery-media absolute inset-0 w-full h-full"
-        loading="eager"
-        decoding="async"
+        fill
+        sizes="(max-width: 1024px) 100vw, 60vw"
+        quality={72}
+        priority
       />
       <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
       <div className="absolute inset-0 flex items-center justify-center">

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import { Save, Store, Sparkles, ShieldCheck, MessageCircleHeart, Tag, PanelBottom, ListTree, Webhook, MousePointerClick } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import SettingsTaxonomies from "../components/admin/settings/SettingsTaxonomies"
 import SettingsInterestForm from "../components/admin/settings/SettingsInterestForm";
 import SettingsWebhooks from "../components/admin/settings/SettingsWebhooks";
 import { VEHICLE_TAXONOMIES_QUERY_KEY } from "@/lib/useTaxonomies";
+import { adminFetch } from "@/lib/adminApi";
 
 const TABS = [
   { id: "general", label: "Loja", icon: Store },
@@ -57,20 +57,11 @@ export default function AdminSettings() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const now = new Date().toISOString();
       const { id: _id, created_date: _cd, updated_date: _ud, created_by: _cb, ...payload } = form;
-      if (record?.id) {
-        const { error } = await supabase
-          .from("store_settings")
-          .update({ ...payload, updated_date: now })
-          .eq("id", record.id);
-        if (error) throw error;
-        return;
-      }
-      const { error } = await supabase
-        .from("store_settings")
-        .insert({ id: crypto.randomUUID(), ...payload, created_date: now, updated_date: now });
-      if (error) throw error;
+      return adminFetch("/api/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SETTINGS_SINGLETON_QUERY_KEY });

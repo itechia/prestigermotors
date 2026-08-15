@@ -8,9 +8,9 @@ import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import InterestFormDialog from "@/components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
-import { imgUrl } from "@/lib/imgUrl";
 import { fetchVehicleDetail } from "@/lib/vehicleQueries";
 import { withLeadPrefill } from "@/lib/prefillParams";
+import OptimizedImage from "@/components/vehicles/OptimizedImage";
 
 function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} }) {
   const settings = useStoreSettings();
@@ -19,7 +19,6 @@ function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} 
 
   const hasEmbed = Boolean(vehicle.has_embed || vehicle.embed_html?.trim());
   const rawImage = vehicle.images?.[0] || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80";
-  const mainImage = imgUrl(rawImage, { w: 480, h: 360, q: 75 });
 
   const hasDiscount = Boolean(vehicle.price_old && vehicle.price_old > vehicle.price);
   const savings = hasDiscount ? vehicle.price_old - vehicle.price : 0;
@@ -54,15 +53,14 @@ function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} 
             onMouseEnter={prefetchDetail}
             onFocus={prefetchDetail}
           >
-            <img
-              src={mainImage}
-              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = rawImage; }}
+            <OptimizedImage
+              src={rawImage}
               alt={`${vehicle.brand} ${vehicle.model}`}
               className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              quality={75}
               loading="lazy"
-              width={480}
-              height={360}
-              decoding="async"
             />
           </Link>
 

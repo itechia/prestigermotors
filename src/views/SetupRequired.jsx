@@ -2,8 +2,8 @@ import React from "react";
 import { AlertTriangle, ExternalLink, Copy, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
-const ENV_CONTENT = `VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...sua_anon_key
+const ENV_CONTENT = `NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...sua_anon_key
 SUPABASE_SERVICE_ROLE_KEY=eyJ...sua_service_role_key`;
 
 export default function SetupRequired() {

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/api/supabaseClient";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 
 // Reads normalized relational taxonomy tables. StoreSettings remains as a
@@ -59,15 +58,9 @@ function normalizeSimpleList(arr, fallback) {
 export const VEHICLE_TAXONOMIES_QUERY_KEY = ["vehicle-taxonomies"];
 
 async function fetchRelationalTaxonomies() {
-  const [optionsResult, brandsResult, modelsResult] = await Promise.all([
-    supabase.from("public_vehicle_taxonomy_options").select("*"),
-    supabase.from("public_vehicle_brands").select("*"),
-    supabase.from("public_vehicle_models").select("*"),
-  ]);
-
-  if (optionsResult.error) throw optionsResult.error;
-  if (brandsResult.error) throw brandsResult.error;
-  if (modelsResult.error) throw modelsResult.error;
+  const response = await fetch("/api/public/taxonomies");
+  if (!response.ok) throw new Error("Falha ao carregar taxonomias.");
+  const payload = await response.json();
 
   const byKind = {
     vehicle_type: [],
@@ -78,7 +71,7 @@ async function fetchRelationalTaxonomies() {
     color: [],
   };
 
-  (optionsResult.data || []).forEach((item) => {
+  (payload.options || []).forEach((item) => {
     if (!byKind[item.kind]) return;
     byKind[item.kind].push({ label: item.label, value: item.value });
   });
@@ -90,12 +83,12 @@ async function fetchRelationalTaxonomies() {
     transmissions: byKind.transmission,
     conditions: byKind.condition,
     colors: byKind.color,
-    brands: (brandsResult.data || []).map((b) => ({
+    brands: (payload.brands || []).map((b) => ({
       label: b.label,
       value: b.value,
       logo_url: b.logo_url,
     })),
-    models: (modelsResult.data || []).map((m) => ({
+    models: (payload.models || []).map((m) => ({
       label: m.label,
       value: m.value,
       parent: m.parent || "",

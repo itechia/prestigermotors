@@ -16,8 +16,8 @@ export const supabase = isSupabaseConfigured
 // ─────────────────────────────────────────────────────────────
 function buildLocalClient() {
   const SESSION_KEY  = 'pm_local_session';
-  const ADMIN_EMAIL  = process.env.NEXT_PUBLIC_LOCAL_ADMIN_EMAIL    || 'admin@prestiger.com';
-  const ADMIN_PASS   = process.env.NEXT_PUBLIC_LOCAL_ADMIN_PASSWORD || 'admin123';
+  const ADMIN_EMAIL  = process.env.NEXT_PUBLIC_LOCAL_ADMIN_EMAIL;
+  const ADMIN_PASS   = process.env.NEXT_PUBLIC_LOCAL_ADMIN_PASSWORD;
 
   // ── Utilitários ────────────────────────────────────────────
   const uid  = () => crypto.randomUUID();
@@ -53,14 +53,21 @@ function buildLocalClient() {
       return { data: { subscription: { unsubscribe: () => window.removeEventListener('_pm_auth', handler) } } };
     },
     async signInWithPassword({ email, password }) {
-      if (email.trim() === ADMIN_EMAIL && password === ADMIN_PASS) {
+      if (ADMIN_EMAIL && ADMIN_PASS && email.trim() === ADMIN_EMAIL && password === ADMIN_PASS) {
         const user    = { id: 'local-admin', email: ADMIN_EMAIL, role: 'admin' };
         const session = { user, access_token: 'local-dev-token' };
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         window.dispatchEvent(new CustomEvent('_pm_auth', { detail: { event: 'SIGNED_IN', session } }));
         return { data: { session, user }, error: null };
       }
-      return { data: null, error: { message: 'E-mail ou senha incorretos' } };
+      return {
+        data: null,
+        error: {
+          message: ADMIN_EMAIL && ADMIN_PASS
+            ? 'E-mail ou senha incorretos'
+            : 'Supabase local nao configurado',
+        },
+      };
     },
     async signOut() {
       localStorage.removeItem(SESSION_KEY);

@@ -1,25 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/api/supabaseClient";
+import { adminFetch } from "@/lib/adminApi";
 import { withDefaults, SETTINGS_RAW_QUERY_KEY, SETTINGS_SINGLETON_QUERY_KEY } from "@/lib/defaults";
 
 async function fetchSettings() {
-  const { data, error } = await supabase
-    .from("public_store_settings")
-    .select("*")
-    .order("updated_date", { ascending: false })
-    .limit(1);
-  if (error) throw error;
-  return data?.[0] ?? null;
+  const response = await fetch("/api/public/settings");
+  if (!response.ok) throw new Error("Falha ao carregar configuracoes publicas.");
+  const payload = await response.json();
+  return payload.settings ?? null;
 }
 
 async function fetchSettingsRaw() {
-  const { data, error } = await supabase
-    .from("store_settings")
-    .select("*")
-    .order("updated_date", { ascending: false })
-    .limit(1);
-  if (error) throw error;
-  return data?.[0] ?? null;
+  const payload = await adminFetch("/api/admin/settings");
+  return payload.settings ?? null;
 }
 
 // Fetches the single StoreSettings record (or returns defaults if none exists).

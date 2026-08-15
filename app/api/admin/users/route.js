@@ -54,7 +54,10 @@ export async function POST(request) {
     created_by: actor.id,
     updated_date: now,
   });
-  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+  if (profileError) {
+    await supabase.auth.admin.deleteUser(newUser.id).catch(() => {});
+    return NextResponse.json({ error: profileError.message }, { status: 500 });
+  }
 
   await writeAdminLog(supabase, {
     actorId: actor.id,

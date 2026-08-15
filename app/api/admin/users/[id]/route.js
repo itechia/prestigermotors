@@ -18,11 +18,11 @@ export async function PATCH(request, { params }) {
     .single();
 
   if (targetError || !targetProfile) {
-    return NextResponse.json({ error: "UsuÃ¡rio nÃ£o encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Usuario nao encontrado." }, { status: 404 });
   }
 
   if (targetProfile.role === "super_admin" && !isSuperAdmin(realProfile)) {
-    return NextResponse.json({ error: "UsuÃ¡rio nÃ£o encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Usuario nao encontrado." }, { status: 404 });
   }
 
   if (typeof body.nome === "string") profileUpdates.nome = body.nome.trim();

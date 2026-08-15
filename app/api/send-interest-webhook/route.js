@@ -1,137 +1,112 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { postJsonWebhook, readLimitedJson, takeRateLimit } from "../_utils/webhookSecurity";
+
+export const runtime = "nodejs";
+
+const formValueSchema = z.union([
+  z.string().max(4000),
+  z.number().finite(),
+  z.boolean(),
+  z.null(),
+]);
+
+const requestSchema = z.object({
+  vehicle_id: z.string().uuid(),
+  form_data: z.record(formValueSchema).refine((value) => Object.keys(value).length <= 30),
+});
+
+const SETTINGS_COLS = [
+  "store_name", "whatsapp_number", "phone_number",
+  "interest_webhook_enabled", "interest_webhook_url",
+  "interest_webhook_auth_enabled", "interest_webhook_auth_user",
+  "interest_webhook_auth_pass",
+].join(",");
+
+const VEHICLE_COLS = [
+  "id", "brand", "model", "version", "year", "manufacture_year",
+  "price", "price_old", "mileage", "fuel_type", "transmission",
+  "color", "body_type", "condition", "status", "featured", "images", "features",
+].join(",");
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Servico indisponivel.");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
 function buildAuthHeader(settings) {
-  if (settings.interest_webhook_auth_enabled && settings.interest_webhook_auth_user) {
-    const token = Buffer.from(
-      `${settings.interest_webhook_auth_user}:${settings.interest_webhook_auth_pass || ''}`
-    ).toString('base64');
-    return { Authorization: `Basic ${token}` };
-  }
-  return {};
+  if (!settings.interest_webhook_auth_enabled || !settings.interest_webhook_auth_user) return {};
+  const token = Buffer.from(
+    `${settings.interest_webhook_auth_user}:${settings.interest_webhook_auth_pass || ""}`
+  ).toString("base64");
+  return { Authorization: `Basic ${token}` };
 }
 
 function buildYearDisplay(manufacture, model) {
   if (manufacture && model && manufacture !== model) return `${manufacture}/${model}`;
-  return String(model || manufacture || '');
+  return String(model || manufacture || "");
 }
 
-const VEHICLE_WEBHOOK_COLS = [
-  'id', 'brand', 'model', 'version',
-  'year', 'manufacture_year', 'price', 'price_old',
-  'mileage', 'fuel_type', 'transmission', 'color',
-  'body_type', 'condition', 'status', 'featured',
-  'images', 'features',
-].join(',');
-
 export async function POST(request) {
-  try {
-    const supabase = getSupabase();
-    const body = await request.json().catch(() => ({}));
-    const { vehicle_id, form_data, source_url } = body;
+  const rate = takeRateLimit(request);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Muitas tentativas. Aguarde e tente novamente." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfter) } }
+    );
+  }
 
-    if (!vehicle_id || !form_data || typeof form_data !== 'object') {
-      return NextResponse.json(
-        { error: 'vehicle_id e form_data são obrigatórios' },
-        { status: 400 }
-      );
+  try {
+    const parsed = requestSchema.safeParse(await readLimitedJson(request));
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
     }
 
-    const [{ data: settingsList }, { data: vehicleList }] = await Promise.all([
-      supabase.from('store_settings').select('*').limit(1),
-      supabase.from('vehicles').select(VEHICLE_WEBHOOK_COLS).eq('id', vehicle_id).limit(1),
+    const { vehicle_id, form_data } = parsed.data;
+    const supabase = getSupabase();
+    const [{ data: settings }, { data: vehicle }] = await Promise.all([
+      supabase.from("store_settings").select(SETTINGS_COLS).limit(1).maybeSingle(),
+      supabase.from("vehicles").select(VEHICLE_COLS).eq("id", vehicle_id).maybeSingle(),
     ]);
 
-    const settings = settingsList?.[0];
-    const vehicle  = vehicleList?.[0];
-
     if (!settings?.interest_webhook_enabled || !settings?.interest_webhook_url) {
-      return NextResponse.json(
-        { error: 'Webhook de interesse não está ativo' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Webhook de interesse nao esta ativo." }, { status: 400 });
     }
     if (!vehicle) {
-      return NextResponse.json({ error: 'Veículo não encontrado' }, { status: 404 });
+      return NextResponse.json({ error: "Veiculo nao encontrado." }, { status: 404 });
     }
 
-    let vehicleUrl = `/veiculo/${vehicle.id}`;
-    try {
-      if (source_url) {
-        const u = new URL(source_url);
-        vehicleUrl = `${u.origin}/veiculo/${vehicle.id}`;
-      }
-    } catch (_) { /* mantém fallback relativo */ }
-
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, "");
     const payload = {
-      type: 'interest',
+      type: "interest",
       sent_at: new Date().toISOString(),
       store: {
         name: settings.store_name,
-        whatsapp: settings.whatsapp,
-        phone: settings.phone,
+        whatsapp: settings.whatsapp_number,
+        phone: settings.phone_number,
       },
       vehicle: {
-        id: vehicle.id,
-        url: vehicleUrl,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        version: vehicle.version,
-        year: vehicle.year,
-        manufacture_year: vehicle.manufacture_year,
+        ...vehicle,
+        url: `${siteUrl}/veiculo/${vehicle.id}`,
         year_display: buildYearDisplay(vehicle.manufacture_year, vehicle.year),
-        price: vehicle.price,
-        price_old: vehicle.price_old,
-        mileage: vehicle.mileage,
-        fuel_type: vehicle.fuel_type,
-        transmission: vehicle.transmission,
-        color: vehicle.color,
-        body_type: vehicle.body_type,
-        condition: vehicle.condition,
-        status: vehicle.status,
-        featured: vehicle.featured,
         images: vehicle.images || [],
         features: vehicle.features || [],
       },
       form: form_data,
     };
 
-    const headers = {
-      'Content-Type': 'application/json',
-      ...buildAuthHeader(settings),
-    };
+    const response = await postJsonWebhook(
+      settings.interest_webhook_url,
+      payload,
+      buildAuthHeader(settings)
+    );
 
-    const resp = await fetch(settings.interest_webhook_url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    const text = await resp.text().catch(() => '');
-    return NextResponse.json({
-      ok: resp.ok,
-      status: resp.status,
-      response: text?.slice(0, 500) || null,
-    });
+    return NextResponse.json({ ok: response.ok, status: response.status });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const status = error?.name === "AbortError" ? 504 : 500;
+    return NextResponse.json({ error: "Nao foi possivel enviar o interesse." }, { status });
   }
-}
-
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }

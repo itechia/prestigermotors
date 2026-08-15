@@ -1,12 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import VehicleDetail from "@/views/VehicleDetail";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
-
-const VEHICLE_META_COLS = [
-  "id", "brand", "model", "version",
-  "year", "manufacture_year", "price", "mileage",
-  "fuel_type", "transmission", "images",
-].join(",");
+import { getCachedStoreName, getCachedVehicleDetail } from "@/lib/serverPublicData";
 
 function getBaseUrl() {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
@@ -24,46 +18,10 @@ function absoluteUrl(url) {
   return `${getBaseUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-async function fetchVehicleMeta(id) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key || !id) return null;
-
-  const supabase = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data } = await supabase
-    .from("vehicles")
-    .select(VEHICLE_META_COLS)
-    .eq("id", id)
-    .single();
-
-  return data || null;
-}
-
-async function fetchStoreName() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return "Prestiger Motors";
-
-  const supabase = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data } = await supabase
-    .from("public_store_settings")
-    .select("store_name")
-    .order("updated_date", { ascending: false })
-    .limit(1);
-
-  return data?.[0]?.store_name || "Prestiger Motors";
-}
-
 export async function generateMetadata({ params }) {
   const [vehicle, storeName] = await Promise.all([
-    fetchVehicleMeta(params.id),
-    fetchStoreName(),
+    getCachedVehicleDetail(params.id),
+    getCachedStoreName(),
   ]);
 
   if (!vehicle) {
@@ -115,6 +73,7 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function Page() {
-  return <VehicleDetail />;
+export default async function Page({ params }) {
+  const vehicle = await getCachedVehicleDetail(params.id);
+  return <VehicleDetail initialVehicle={vehicle} />;
 }

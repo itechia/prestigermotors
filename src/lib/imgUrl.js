@@ -1,12 +1,13 @@
-// Transforms Supabase Storage URLs to use the image transformation API.
-// Supabase serves resized/compressed images via /storage/v1/render/image/.
+// Uses Supabase image transformations only when explicitly enabled.
+// Projects without that paid feature keep the original public Storage URL.
 // Non-Supabase URLs pass through unchanged — no breakage on external images.
 const BASE = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const ENABLED = process.env.NEXT_PUBLIC_SUPABASE_IMAGE_TRANSFORMATIONS === "true";
 const OBJ  = "/storage/v1/object/public/";
 const REND = "/storage/v1/render/image/public/";
 
 export function imgUrl(src, { w, h, q = 75 } = {}) {
-  if (!src || !BASE || !src.startsWith(BASE + OBJ)) return src;
+  if (!src || !ENABLED || !BASE || !src.startsWith(BASE + OBJ)) return src;
   const file = src.slice((BASE + OBJ).length);
   const p = new URLSearchParams({ quality: String(q) });
   if (w) p.set("width",  String(w));
