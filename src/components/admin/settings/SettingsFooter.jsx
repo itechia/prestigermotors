@@ -143,22 +143,20 @@ function LinkRow({ item, onChange }) {
           <button
             type="button"
             onClick={() => onChange({ ...item, link_type: "domain" })}
-            className={`px-3 text-xs font-medium transition-colors ${
-              linkType === "domain"
+            className={`px-3 text-xs font-medium transition-colors ${linkType === "domain"
                 ? "bg-foreground text-background"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             Extensão do domínio
           </button>
           <button
             type="button"
             onClick={() => onChange({ ...item, link_type: "external" })}
-            className={`px-3 text-xs font-medium transition-colors border-l border-border ${
-              linkType === "external"
+            className={`px-3 text-xs font-medium transition-colors border-l border-border ${linkType === "external"
                 ? "bg-foreground text-background"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             Link direto
           </button>
@@ -215,7 +213,7 @@ export default function SettingsFooter({ form, update }) {
     <>
       <SettingsSection
         title="Páginas do site"
-        desc="Escreva uma página (Política de Privacidade, Termos, LGPD...) em Markdown, ou aponte direto pra um link existente. Os dois tipos aparecem sozinhos na linha de rodapé, abaixo dos direitos autorais — não precisa adicionar link em nenhuma coluna."
+        desc="Escreva uma página (Política de Privacidade, Termos, LGPD...) em Markdown."
       >
         <SitePagesManager />
       </SettingsSection>
