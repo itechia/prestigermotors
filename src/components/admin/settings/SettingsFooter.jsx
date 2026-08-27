@@ -1,10 +1,13 @@
 import React from "react";
 import { SettingsSection, TextAreaField } from "@/components/admin/SettingsField";
 import ArrayFieldEditor from "@/components/admin/ArrayFieldEditor";
+import SitePagesManager from "@/components/admin/settings/SitePagesManager";
+import { useSitePages } from "@/lib/useSitePages";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Loader2, X } from "lucide-react";
 import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
@@ -102,6 +105,8 @@ function SocialRow({
 
 function LinkRow({ item, onChange }) {
   const linkType = item.link_type || "domain";
+  const { pages } = useSitePages();
+
   return (
     <div className="space-y-2">
       <Input
@@ -110,6 +115,29 @@ function LinkRow({ item, onChange }) {
         onChange={(e) => onChange({ ...item, label: e.target.value })}
         className="rounded-xl"
       />
+      {pages.length > 0 && (
+        <Select
+          value=""
+          onValueChange={(slug) => {
+            const page = pages.find((p) => p.slug === slug);
+            if (!page) return;
+            const url = page.kind === "link" ? page.link_url : `/pagina/${page.slug}`;
+            const linkType = page.kind === "link" ? page.link_type : "domain";
+            onChange({ ...item, label: page.title, url, link_type: linkType });
+          }}
+        >
+          <SelectTrigger className="rounded-xl h-9 text-xs text-muted-foreground">
+            <SelectValue placeholder="Ou destacar uma página do site nesta coluna (opcional)..." />
+          </SelectTrigger>
+          <SelectContent>
+            {pages.map((page) => (
+              <SelectItem key={page.id} value={page.slug}>
+                {page.title} {!page.published && "(rascunho)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="flex rounded-xl border border-border overflow-hidden bg-background h-9 flex-shrink-0">
           <button
@@ -185,6 +213,13 @@ function ColumnTitleFields({ form, update, titleKey, descKey, defaultTitle }) {
 export default function SettingsFooter({ form, update }) {
   return (
     <>
+      <SettingsSection
+        title="Páginas do site"
+        desc="Escreva uma página (Política de Privacidade, Termos, LGPD...) em Markdown, ou aponte direto pra um link existente. Os dois tipos aparecem sozinhos na linha de rodapé, abaixo dos direitos autorais — não precisa adicionar link em nenhuma coluna."
+      >
+        <SitePagesManager />
+      </SettingsSection>
+
       <SettingsSection
         title="Sobre a loja"
         desc="Texto exibido na primeira coluna do rodapé. Descreva sua loja em 1–2 frases: quem você é, o que oferece e o que diferencia você. Ex: 'Veículos seminovos com laudo cautelar gratuito e 7 dias de garantia. Aceitamos seu usado como parte do pagamento.'"

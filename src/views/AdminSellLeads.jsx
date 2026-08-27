@@ -148,7 +148,7 @@ export default function AdminSellLeads() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-card rounded-3xl border border-border/50 p-12 text-center">
+        <div className="bg-card rounded-2xl border border-border/50 p-12 text-center">
           <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <h3 className="font-display font-bold text-lg">Nenhuma proposta {statusFilter !== "all" ? `com status "${STATUS_LABELS[statusFilter]}"` : "ainda"}</h3>
           <p className="text-sm text-muted-foreground mt-1">
@@ -156,7 +156,7 @@ export default function AdminSellLeads() {
           </p>
         </div>
       ) : (
-        <div className="bg-card rounded-3xl border border-border/50 overflow-hidden divide-y divide-border/50">
+        <div className="bg-card rounded-2xl border border-border/50 overflow-hidden divide-y divide-border/50">
           {filtered.map((lead) => (
             <button
               key={lead.id}

@@ -1,7 +1,21 @@
 import React from "react";
 import { useStoreSettings } from "@/lib/useStoreSettings";
+import { usePublicSitePages } from "@/lib/usePublicSitePages";
 import { getStoreNameFontStyle } from "@/lib/fonts";
 import SocialIcons from "@/components/SocialIcons";
+
+// Resolve o link de uma "página do site" no rodapé: páginas em Markdown vão
+// para /pagina/[slug]; links diretos usam a própria URL configurada.
+function resolveSitePageLink(page) {
+  if (page.kind === "link") {
+    const url = page.link_url || "#";
+    if (page.link_type === "external" || /^https?:\/\//i.test(url)) {
+      return { href: url, target: "_blank", rel: "noreferrer noopener" };
+    }
+    return { href: url.startsWith("/") ? url : `/${url}` };
+  }
+  return { href: `/pagina/${page.slug}` };
+}
 
 // Resolves a footer link based on its type:
 // - "external": uses the URL exactly as provided (with target="_blank")
@@ -49,6 +63,7 @@ function FooterColumn({ title, desc, links }) {
 
 export default function SiteFooter() {
   const s = useStoreSettings();
+  const sitePages = usePublicSitePages();
   const year = new Date().getFullYear();
 
   return (
@@ -93,8 +108,21 @@ export default function SiteFooter() {
           />
         </div>
 
-        <div className="mt-10 pt-6 border-t border-border text-center text-xs text-muted-foreground">
+        <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center text-xs text-muted-foreground">
           <span>© {year} {s.store_name}. Todos os direitos reservados.</span>
+          {sitePages.length > 0 && (
+            <div className="flex items-center flex-wrap justify-center gap-x-4 gap-y-1">
+              {sitePages.map((page) => (
+                <a
+                  key={page.id}
+                  {...resolveSitePageLink(page)}
+                  className="hover:text-foreground hover:underline transition-colors"
+                >
+                  {page.title}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </footer>

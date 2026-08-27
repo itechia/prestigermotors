@@ -123,6 +123,41 @@ export const getCachedPublicSettings = unstable_cache(
   { revalidate: 300, tags: ["public-settings"] }
 );
 
+export const getCachedSitePages = unstable_cache(
+  async () => {
+    const supabase = getPublicSupabase();
+    if (!supabase) return [];
+
+    const { data, error } = await supabase
+      .from("public_site_pages")
+      .select("id,slug,title,kind,link_url,link_type,updated_date")
+      .order("title", { ascending: true });
+
+    if (error) throw error;
+    return data ?? [];
+  },
+  ["public-site-pages-list-v1"],
+  { revalidate: 300, tags: ["public-site-pages"] }
+);
+
+export const getCachedSitePage = unstable_cache(
+  async (slug) => {
+    const supabase = getPublicSupabase();
+    if (!supabase || !slug) return null;
+
+    const { data, error } = await supabase
+      .from("public_site_pages")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ?? null;
+  },
+  ["public-site-page-v1"],
+  { revalidate: 60, tags: ["public-site-pages"] }
+);
+
 export const getCachedPublicTaxonomies = unstable_cache(
   async () => {
     const supabase = getPublicSupabase();

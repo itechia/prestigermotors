@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { formatCurrency, formatYear } from "@/lib/formatters";
 import PhoneInput from "@/components/PhoneInput";
+import { formatCpfCnpj, isValidCpfCnpj } from "@/lib/cpfCnpj";
 
 const FALLBACK_FIELDS = [
   { key: "name", label: "Nome completo", type: "text", required: true },
@@ -73,6 +74,14 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
         const confirm = String(values[f.key + CONFIRM_SUFFIX] || "").trim();
         if (main && main !== confirm) {
           toast.error("Os números de telefone não conferem. Confirme o número.");
+          return;
+        }
+      }
+      // CPF/CNPJ must pass the check-digit validation when preenchido.
+      if (f.type === "cpf_cnpj") {
+        const doc = String(values[f.key] || "").trim();
+        if (doc && !isValidCpfCnpj(doc)) {
+          toast.error(`${f.label}: CPF ou CNPJ inválido.`);
           return;
         }
       }
@@ -239,6 +248,25 @@ function FieldRow({ field, value, confirmValue, onChange, onConfirmChange }) {
           {confirmValue && !phonesMatch && (
             <p className="text-[11px] text-destructive">Os números não conferem.</p>
           )}
+        </div>
+      ) : field.type === "cpf_cnpj" ? (
+        <div className="space-y-1">
+          <Input
+            id={id}
+            inputMode="numeric"
+            value={value}
+            onChange={(e) => onChange(formatCpfCnpj(e.target.value))}
+            placeholder={field.placeholder || "000.000.000-00"}
+            className="h-11 rounded-xl"
+            maxLength={18}
+          />
+          {(() => {
+            const digits = value.replace(/\D/g, "");
+            const complete = digits.length === 11 || digits.length === 14;
+            return complete && !isValidCpfCnpj(value) ? (
+              <p className="text-[11px] text-destructive">CPF ou CNPJ inválido.</p>
+            ) : null;
+          })()}
         </div>
       ) : field.type === "textarea" ? (
         <Textarea

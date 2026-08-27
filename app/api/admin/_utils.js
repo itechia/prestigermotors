@@ -36,6 +36,7 @@ export function getModuleFromRequest(request, explicitModule = null) {
   if (pathname.startsWith("/api/admin/module-access")) return "usuarios";
   if (pathname.startsWith("/api/admin/users") || pathname.startsWith("/api/admin/user-logs")) return "usuarios";
   if (pathname.startsWith("/api/admin/sales")) return "vendas";
+  if (pathname.startsWith("/api/admin/site-pages")) return "configuracoes";
   return null;
 }
 

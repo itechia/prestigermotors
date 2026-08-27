@@ -16,7 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, Loader2, Pencil, ReceiptText, Trash2 } from "lucide-react";
+import StatTile from "@/components/admin/StatTile";
+import { Download, Loader2, Package, Pencil, ReceiptText, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 const todayLocal = () => new Date().toISOString().slice(0, 10);
@@ -246,7 +247,7 @@ export default function AdminSales() {
             <Input value={form.sale_price} onChange={(e) => update("sale_price", e.target.value)} placeholder="189900" required />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Cliente</Label>
               <Input value={form.customer_name} onChange={(e) => update("customer_name", e.target.value)} placeholder="Nome do comprador" />
@@ -275,8 +276,8 @@ export default function AdminSales() {
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <Metric label="Veículos vendidos" value={totals.quantity} />
-            <Metric label="Valor vendido" value={formatCurrency(totals.value)} />
+            <StatTile icon={Package} label="Veículos vendidos" value={totals.quantity} />
+            <StatTile icon={Wallet} label="Valor vendido" value={formatCurrency(totals.value)} />
           </div>
 
           <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
@@ -289,46 +290,50 @@ export default function AdminSales() {
             ) : sales.length === 0 ? (
               <div className="p-10 text-center text-sm text-muted-foreground">Nenhuma venda registrada ainda.</div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Veículo</TableHead>
-                    <TableHead>Vendedor</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    {isAdmin && <TableHead className="text-right">Acoes</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sales.map((sale) => (
-                    <TableRow key={sale.id}>
-                      <TableCell>
-                        <div className="font-medium">{sale.vehicle ? `${sale.vehicle.brand} ${sale.vehicle.model}` : "Veículo removido"}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(sale.sold_at).toLocaleDateString("pt-BR")} · qtd. {sale.quantity}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{sale.seller?.nome || sale.seller?.email || "Sem vendedor"}</Badge>
-                      </TableCell>
-                      <TableCell>{sale.customer_name || "-"}</TableCell>
-                      <TableCell className="text-right font-semibold">{formatCurrency(sale.sale_price)}</TableCell>
-                      {isAdmin && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" className="rounded-full" onClick={() => openEditSale(sale)}>
-                              <Pencil className="w-4 h-4 mr-2" /> Editar
-                            </Button>
-                            <Button variant="destructive" size="sm" className="rounded-full" onClick={() => setDeleteSale(sale)}>
-                              <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                            </Button>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Veículo</TableHead>
+                      <TableHead>Vendedor</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      {isAdmin && <TableHead className="text-right">Acoes</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sales.map((sale) => (
+                      <TableRow key={sale.id}>
+                        <TableCell>
+                          <div className="font-medium">{sale.vehicle ? `${sale.vehicle.brand} ${sale.vehicle.model}` : "Veículo removido"}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(sale.sold_at).toLocaleDateString("pt-BR")} · qtd. {sale.quantity}
                           </div>
                         </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <TableCell>
+                          <Badge variant="secondary">{sale.seller?.nome || sale.seller?.email || "Sem vendedor"}</Badge>
+                        </TableCell>
+                        <TableCell>{sale.customer_name || "-"}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCurrency(sale.sale_price)}</TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1.5">
+                              <Button variant="outline" size="icon" className="rounded-full h-8 w-8" onClick={() => openEditSale(sale)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                                <span className="sr-only">Editar</span>
+                              </Button>
+                              <Button variant="outline" size="icon" className="rounded-full h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteSale(sale)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span className="sr-only">Excluir</span>
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </div>
         </div>
@@ -426,14 +431,5 @@ export default function AdminSales() {
         </DialogContent>
       </Dialog>
     </AdminShell>
-  );
-}
-
-function Metric({ label, value }) {
-  return (
-    <div className="bg-card border border-border/50 rounded-2xl p-4">
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
-      <div className="font-display font-bold text-xl mt-1">{value}</div>
-    </div>
   );
 }

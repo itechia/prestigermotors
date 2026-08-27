@@ -88,34 +88,36 @@ export default function AdminSettings() {
       }
     >
       {/* Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6" role="tablist">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              role="tab"
-              aria-selected={active}
-              className={cn(
-                "min-h-11 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-[13px] font-medium transition-colors relative",
-                active
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-secondary/60"
-              )}
-            >
-              <Icon className="w-4 h-4" aria-hidden="true" />
-              {t.label}
-            </button>
-          );
-        })}
+      <div className="mb-6 -mx-4 lg:-mx-8 px-4 lg:px-8 overflow-x-auto">
+        <div className="flex items-center border-b border-border/60 min-w-max" role="tablist">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                role="tab"
+                aria-selected={active}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 whitespace-nowrap min-w-[100px] px-3.5 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors",
+                  active
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="w-4 h-4" aria-hidden="true" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isLoading ? (
         <div className="space-y-4">
           {Array(3).fill(0).map((_, i) => (
-            <div key={i} className="h-40 bg-secondary rounded-3xl animate-pulse" />
+            <div key={i} className="h-40 bg-secondary rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : (

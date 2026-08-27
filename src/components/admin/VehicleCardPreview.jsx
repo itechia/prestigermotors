@@ -18,7 +18,7 @@ export default function VehicleCardPreview({ vehicle }) {
     : 0;
 
   return (
-    <div className="flex flex-col bg-card rounded-3xl overflow-hidden border border-border/50 shadow-sm">
+    <div className="flex flex-col bg-card rounded-2xl overflow-hidden border border-border/50 shadow-sm">
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
         <img
           src={mainImage}

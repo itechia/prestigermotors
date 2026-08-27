@@ -14,7 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Loader2, Pencil, ShieldCheck, Trash2, UserPlus, KeyRound } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import StatTile from "@/components/admin/StatTile";
+import { Eye, Loader2, MoreHorizontal, Pencil, ShieldCheck, Trash2, UserPlus, KeyRound, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const emptyUser = { nome: "", email: "", password: "", role: "vendedor" };
@@ -181,10 +183,10 @@ export default function AdminUsers() {
             </form>
 
             <div className="grid grid-cols-2 gap-3">
-              {isSuperAdmin && <Metric label="Super admins" value={stats.superAdmins} />}
-              <Metric label="Admins" value={stats.admins} />
-              <Metric label="Vendedores" value={stats.sellers} />
-              <Metric label="Inativos" value={stats.inactive} />
+              {isSuperAdmin && <StatTile icon={Users} label="Super admins" value={stats.superAdmins} compact />}
+              <StatTile icon={Users} label="Admins" value={stats.admins} compact />
+              <StatTile icon={Users} label="Vendedores" value={stats.sellers} compact />
+              <StatTile icon={Users} label="Inativos" value={stats.inactive} compact />
             </div>
 
             {canManageModuleBlocks && moduleAccessPayload && (
@@ -220,83 +222,85 @@ export default function AdminUsers() {
               {isLoading ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Usuário</TableHead>
-                      <TableHead>Papel</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="font-medium">{user.nome || user.email}</div>
-                          <div className="text-xs text-muted-foreground">{user.email}</div>
-                          <div className="text-[11px] text-muted-foreground">
-                            Último acesso: {user.last_login_at ? new Date(user.last_login_at).toLocaleString("pt-BR") : "-"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Select value={user.role} onValueChange={(role) => updateMutation.mutate({ id: user.id, role })}>
-                            <SelectTrigger className="w-[130px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="vendedor">Vendedor</SelectItem>
-                              {isSuperAdmin && <SelectItem value="super_admin">Super admin</SelectItem>}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Switch
-                              checked={!!user.active}
-                              onCheckedChange={(active) => updateMutation.mutate({ id: user.id, active })}
-                            />
-                            <div className="space-y-1">
-                              <Badge variant={user.active ? "secondary" : "destructive"}>{user.active ? "Ativo" : "Inativo"}</Badge>
-                              {user.must_change_password && <Badge variant="outline">Trocar senha</Badge>}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" className="rounded-full" onClick={() => openEdit(user)}>
-                              <Pencil className="w-4 h-4 mr-2" /> Editar
-                            </Button>
-                            {isSuperAdmin && user.role !== "super_admin" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => startSimulation(user.id)}
-                                disabled={isSimulating}
-                              >
-                                <Eye className="w-4 h-4 mr-2" /> Simular
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm" className="rounded-full" onClick={() => setResetTarget(user)}>
-                              <KeyRound className="w-4 h-4 mr-2" /> Resetar senha
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="rounded-full"
-                              onClick={() => setDeleteTarget(user)}
-                              disabled={user.role === "super_admin" && !isSuperAdmin}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                            </Button>
-                          </div>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Papel</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="font-medium">{user.nome || user.email}</div>
+                            <div className="text-xs text-muted-foreground">{user.email}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              Último acesso: {user.last_login_at ? new Date(user.last_login_at).toLocaleString("pt-BR") : "-"}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Select value={user.role} onValueChange={(role) => updateMutation.mutate({ id: user.id, role })}>
+                              <SelectTrigger className="w-[130px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="vendedor">Vendedor</SelectItem>
+                                {isSuperAdmin && <SelectItem value="super_admin">Super admin</SelectItem>}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Switch
+                                checked={!!user.active}
+                                onCheckedChange={(active) => updateMutation.mutate({ id: user.id, active })}
+                              />
+                              {user.must_change_password && (
+                                <Badge variant="outline" className="text-[10px]">Trocar senha</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="icon" className="rounded-full h-8 w-8">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                  <span className="sr-only">Ações</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEdit(user)}>
+                                  <Pencil className="w-4 h-4 mr-2" /> Editar
+                                </DropdownMenuItem>
+                                {isSuperAdmin && user.role !== "super_admin" && (
+                                  <DropdownMenuItem onClick={() => startSimulation(user.id)} disabled={isSimulating}>
+                                    <Eye className="w-4 h-4 mr-2" /> Simular
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => setResetTarget(user)}>
+                                  <KeyRound className="w-4 h-4 mr-2" /> Resetar senha
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setDeleteTarget(user)}
+                                  disabled={user.role === "super_admin" && !isSuperAdmin}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
 
@@ -378,8 +382,8 @@ export default function AdminUsers() {
                     </SelectContent>
                   </Select>
                 </div>
-                <label className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2">
-                  <span className="text-sm">Usuario ativo</span>
+                <label className="flex items-center justify-between px-1">
+                  <span className="text-sm text-muted-foreground">Usuario ativo</span>
                   <Switch checked={editTarget.active} onCheckedChange={(active) => setEditTarget((u) => ({ ...u, active }))} />
                 </label>
               </div>
@@ -412,15 +416,6 @@ export default function AdminUsers() {
   );
 }
 
-function Metric({ label, value }) {
-  return (
-    <div className="bg-card border border-border/50 rounded-2xl p-4">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
-      <div className="font-display font-bold text-xl">{value}</div>
-    </div>
-  );
-}
-
 function formatAction(action) {
   const labels = {
     usuario_criado: "Usuário criado",
@@ -431,6 +426,9 @@ function formatAction(action) {
     venda_excluida: "Venda excluida",
     usuario_excluido: "Usuario excluido",
     modulo_acesso_atualizado: "Bloqueio de modulo atualizado",
+    pagina_criada: "Página do site criada",
+    pagina_atualizada: "Página do site atualizada",
+    pagina_excluida: "Página do site excluída",
   };
   return labels[action] || action;
 }

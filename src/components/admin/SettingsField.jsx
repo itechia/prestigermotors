@@ -43,7 +43,7 @@ export function TextAreaField({ label, hint, value, onChange, placeholder, rows 
 
 export function SettingsSection({ title, desc, children }) {
   return (
-    <div className="bg-card rounded-3xl p-5 md:p-6 border border-border/50">
+    <div className="bg-card rounded-2xl p-5 md:p-6 border border-border/50">
       <div className="mb-5">
         <h3 className="font-display font-bold text-base">{title}</h3>
         {desc && <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>}

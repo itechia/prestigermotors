@@ -20,12 +20,13 @@ const FIELD_TYPES = [
   { value: "email", label: "E-mail" },
   { value: "phone", label: "Telefone (com DDI)" },
   { value: "number", label: "Número" },
+  { value: "cpf_cnpj", label: "CPF ou CNPJ" },
   { value: "select", label: "Seleção (lista)" },
 ];
 
 function SettingsSection({ title, desc, children }) {
   return (
-    <div className="bg-card rounded-3xl p-5 md:p-6 border border-border/50">
+    <div className="bg-card rounded-2xl p-5 md:p-6 border border-border/50">
       <h2 className="font-display font-bold text-lg">{title}</h2>
       {desc && <p className="text-sm text-muted-foreground mt-0.5 mb-4">{desc}</p>}
       <div className={desc ? "" : "mt-4"}>{children}</div>

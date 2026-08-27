@@ -397,7 +397,7 @@ function Editor() {
 
 function Section({ title, desc, children }) {
   return (
-    <div className="bg-card rounded-3xl p-5 md:p-6 border border-border/50">
+    <div className="bg-card rounded-2xl p-5 md:p-6 border border-border/50">
       <h2 className="font-display font-bold text-lg">{title}</h2>
       {desc && <p className="text-sm text-muted-foreground mt-0.5 mb-4">{desc}</p>}
       <div className={desc ? "" : "mt-4"}>{children}</div>
@@ -455,7 +455,7 @@ function EditorSkeleton() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <div className="space-y-6">
           {[180, 220, 160, 200].map((h, i) => (
-            <div key={i} className="bg-card rounded-3xl p-5 border border-border/50">
+            <div key={i} className="bg-card rounded-2xl p-5 border border-border/50">
               <div className="h-5 w-28 bg-secondary rounded-lg mb-4" />
               <div className="grid grid-cols-2 gap-3">
                 {Array(4).fill(0).map((_, j) => (
@@ -465,7 +465,7 @@ function EditorSkeleton() {
             </div>
           ))}
         </div>
-        <div className="hidden lg:block h-64 bg-card rounded-3xl border border-border/50" />
+        <div className="hidden lg:block h-64 bg-card rounded-2xl border border-border/50" />
       </div>
     </div>
   );

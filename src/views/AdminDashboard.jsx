@@ -9,6 +9,7 @@ import { Plus, Car, Eye, CheckCircle2, DollarSign, Flame, ArrowRight, Settings, 
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/formatters";
 import AdminShell from "../components/admin/AdminShell";
+import StatTile from "@/components/admin/StatTile";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function AdminDashboard() {
@@ -53,16 +54,13 @@ export default function AdminDashboard() {
         </Button>
       ) : null}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
-        <StatCard icon={Car} label="Total cadastrado" value={vehicles.length} loading={isLoading} />
-        <StatCard icon={Eye} label="Disponíveis" value={available.length} loading={isLoading} accent="green" />
-        <StatCard icon={Flame} label="Em destaque" value={featured.length} loading={isLoading} accent="amber" />
-        <StatCard icon={DollarSign} label="Valor em estoque" value={formatCurrency(totalValue)} loading={isLoading} small />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6">
-        <StatCard icon={CheckCircle2} label="Reservados" value={reserved.length} loading={isLoading} small accent="yellow" />
-        <StatCard icon={CheckCircle2} label="Vendidos" value={sold.length} loading={isLoading} small accent="red" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
+        <StatTile icon={Car} label="Total cadastrado" value={vehicles.length} loading={isLoading} />
+        <StatTile icon={Eye} label="Disponíveis" value={available.length} loading={isLoading} />
+        <StatTile icon={Flame} label="Em destaque" value={featured.length} loading={isLoading} />
+        <StatTile icon={CheckCircle2} label="Reservados" value={reserved.length} loading={isLoading} />
+        <StatTile icon={CheckCircle2} label="Vendidos" value={sold.length} loading={isLoading} />
+        <StatTile icon={DollarSign} label="Valor em estoque" value={formatCurrency(totalValue)} loading={isLoading} compact />
       </div>
 
       <div className="grid md:grid-cols-3 gap-3 mb-8">
@@ -95,7 +93,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      <div className="bg-card rounded-3xl border border-border/50 overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/50 overflow-hidden">
         <div className="p-5 border-b border-border/50 flex items-center justify-between">
           <h2 className="font-display font-bold text-lg">Últimos veículos cadastrados</h2>
           <Link href="/admin/veiculos" className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1">
@@ -155,34 +153,13 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, loading, small, accent }) {
-  const accentColors = {
-    green: "bg-green-50 text-green-700",
-    amber: "bg-amber-50 text-amber-700",
-    yellow: "bg-yellow-50 text-yellow-700",
-    red: "bg-red-50 text-red-700",
-  };
-  const iconBg = accentColors[accent] || "bg-secondary text-foreground";
-  return (
-    <div className="bg-card rounded-2xl p-4 md:p-5 border border-border/50">
-      <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center mb-3`}>
-        <Icon className="w-4 h-4" aria-hidden="true" />
-      </div>
-      <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
-      <div className={`font-display font-bold mt-0.5 ${small ? "text-base" : "text-2xl"}`}>
-        {loading ? "-" : value}
-      </div>
-    </div>
-  );
-}
-
 function QuickAction({ href, icon: Icon, title, desc, badge }) {
   return (
     <Link
       href={href}
       className="group bg-card rounded-2xl p-5 border border-border/50 hover:border-primary/30 hover:shadow-sm transition-all flex items-center gap-4 relative"
     >
-      <div className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center relative">
+      <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center relative shrink-0">
         <Icon className="w-5 h-5" aria-hidden="true" />
         {badge > 0 && (
           <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">

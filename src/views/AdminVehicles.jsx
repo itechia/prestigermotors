@@ -141,7 +141,7 @@ export default function AdminVehicles() {
         </Select>
       </div>
 
-      <div className="bg-card rounded-3xl border border-border/50 overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/50 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
         ) : filtered.length === 0 ? (

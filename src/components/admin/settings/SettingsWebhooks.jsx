@@ -16,7 +16,7 @@ import { adminFetch } from "@/lib/adminApi";
 
 function Section({ title, desc, icon: Icon, children }) {
   return (
-    <div className="bg-card rounded-3xl p-5 md:p-6 border border-border/50">
+    <div className="bg-card rounded-2xl p-5 md:p-6 border border-border/50">
       <div className="flex items-start gap-3 mb-4">
         {Icon && (
           <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
