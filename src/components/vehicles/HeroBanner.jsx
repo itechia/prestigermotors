@@ -4,6 +4,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { cn } from "@/lib/utils";
 
+// Texto alternativo do banner: usa a legenda cadastrada no admin e, na falta
+// dela, descreve a posição do banner para quem usa leitor de tela.
+function slideAlt(slide, index, total, storeName) {
+  if (slide?.alt) return slide.alt;
+  if (slide?.title) return slide.title;
+  const suffix = total > 1 ? ` ${index + 1} de ${total}` : "";
+  return `Destaque${suffix} da ${storeName || "loja"}`;
+}
+
 export default function HeroBanner() {
   const s = useStoreSettings();
 
@@ -80,17 +89,19 @@ export default function HeroBanner() {
             {mm && (
               <img
                 src={mm}
-                alt=""
+                alt={slideAlt(slide, i, slides.length, s.store_name)}
                 className="block md:hidden absolute inset-0 w-full h-full object-cover"
                 loading={i === 0 ? "eager" : "lazy"}
+                decoding={i === 0 ? "sync" : "async"}
               />
             )}
             {dm && (
               <img
                 src={dm}
-                alt=""
+                alt={slideAlt(slide, i, slides.length, s.store_name)}
                 className="hidden md:block absolute inset-0 w-full h-full object-cover"
                 loading={i === 0 ? "eager" : "lazy"}
+                decoding={i === 0 ? "sync" : "async"}
               />
             )}
           </>

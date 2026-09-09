@@ -17,12 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, Loader2, Send } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { formatCurrency, formatYear } from "@/lib/formatters";
 import PhoneInput from "@/components/PhoneInput";
 import { formatCpfCnpj, isValidCpfCnpj } from "@/lib/cpfCnpj";
+import { track } from "@/lib/analytics";
 
 const FALLBACK_FIELDS = [
   { key: "name", label: "Nome completo", type: "text", required: true },
@@ -42,49 +43,82 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
   const [values, setValues] = useState(defaultValues);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  // Erros exibidos abaixo de cada campo, além do toast.
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (open) setValues(defaultValues);
+    if (open) {
+      setValues(defaultValues);
+      setErrors({});
+    }
   }, [open, defaultValues]);
 
-  const setField = (key, val) => setValues((v) => ({ ...v, [key]: val }));
+  const setField = (key, val) => {
+    setValues((v) => ({ ...v, [key]: val }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   const handleClose = (next) => {
     onOpenChange(next);
     if (!next) {
       setTimeout(() => {
         setValues(defaultValues);
+        setErrors({});
         setDone(false);
         setSubmitting(false);
       }, 200);
     }
   };
 
+  // Valida todos os campos de uma vez para o visitante corrigir tudo junto.
+  const validate = () => {
+    const found = {};
+
+    for (const f of fields) {
+      const value = String(values[f.key] || "").trim();
+
+      if (f.required && !value) {
+        found[f.key] = `${f.label} é obrigatório.`;
+        continue;
+      }
+      if (f.type === "phone") {
+        const digits = value.replace(/\D/g, "");
+        if (value && digits.length < 12) {
+          found[f.key] = "Telefone incompleto. Inclua o DDD.";
+          continue;
+        }
+        const confirm = String(values[f.key + CONFIRM_SUFFIX] || "").trim();
+        if (value && value !== confirm) {
+          found[f.key + CONFIRM_SUFFIX] = "Os números não conferem.";
+        }
+      }
+      if (f.type === "cpf_cnpj" && value && !isValidCpfCnpj(value)) {
+        found[f.key] = "CPF ou CNPJ inválido.";
+      }
+      if (f.type === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) {
+        found[f.key] = "E-mail inválido. Exemplo: voce@exemplo.com";
+      }
+    }
+
+    return found;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Required field validation
-    for (const f of fields) {
-      if (f.required && !String(values[f.key] || "").trim()) {
-        toast.error(`Preencha o campo: ${f.label}`);
-        return;
-      }
-      // Phone fields must match their confirmation
-      if (f.type === "phone") {
-        const main = String(values[f.key] || "").trim();
-        const confirm = String(values[f.key + CONFIRM_SUFFIX] || "").trim();
-        if (main && main !== confirm) {
-          toast.error("Os números de telefone não conferem. Confirme o número.");
-          return;
-        }
-      }
-      // CPF/CNPJ must pass the check-digit validation when preenchido.
-      if (f.type === "cpf_cnpj") {
-        const doc = String(values[f.key] || "").trim();
-        if (doc && !isValidCpfCnpj(doc)) {
-          toast.error(`${f.label}: CPF ou CNPJ inválido.`);
-          return;
-        }
-      }
+
+    const found = validate();
+    setErrors(found);
+    const keys = Object.keys(found);
+    if (keys.length > 0) {
+      toast.error(
+        keys.length === 1 ? found[keys[0]] : `Revise ${keys.length} campos destacados.`
+      );
+      return;
     }
 
     // Build the payload — strip the internal confirmation copies.
@@ -106,11 +140,14 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
       });
       const data = await response.json().catch(() => ({}));
       if (data?.ok === false || data?.error) {
+        setErrors({ submit: "Não conseguimos enviar agora. Tente novamente em instantes." });
         toast.error("Tivemos um problema inesperado. Tente novamente mais tarde.");
       } else {
+        track("interest_submit", { vehicle });
         setDone(true);
       }
     } catch {
+      setErrors({ submit: "Falha de conexão. Verifique a internet e tente de novo." });
       toast.error("Tivemos um problema inesperado. Tente novamente mais tarde.");
     } finally {
       setSubmitting(false);
@@ -182,10 +219,22 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
                   field={f}
                   value={values[f.key] || ""}
                   confirmValue={values[f.key + CONFIRM_SUFFIX] || ""}
+                  error={errors[f.key]}
+                  confirmError={errors[f.key + CONFIRM_SUFFIX]}
                   onChange={(v) => setField(f.key, v)}
                   onConfirmChange={(v) => setField(f.key + CONFIRM_SUFFIX, v)}
                 />
               ))}
+
+              {errors.submit && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-2.5 text-xs text-destructive"
+                >
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  {errors.submit}
+                </div>
+              )}
 
               <Button
                 type="submit"
@@ -216,9 +265,20 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
   );
 }
 
-function FieldRow({ field, value, confirmValue, onChange, onConfirmChange }) {
+function ErrorText({ children }) {
+  if (!children) return null;
+  return (
+    <p role="alert" className="flex items-start gap-1 text-[11px] text-destructive">
+      <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
+      {children}
+    </p>
+  );
+}
+
+function FieldRow({ field, value, confirmValue, error, confirmError, onChange, onConfirmChange }) {
   const id = `intf-${field.key}`;
   const phonesMatch = value && value === confirmValue;
+  const errorClass = "border-destructive focus-visible:ring-destructive";
 
   return (
     <div className="space-y-1.5">
@@ -229,25 +289,30 @@ function FieldRow({ field, value, confirmValue, onChange, onConfirmChange }) {
 
       {field.type === "phone" ? (
         <div className="space-y-2">
-          <PhoneInput
-            value={value}
-            onChange={onChange}
-            placeholder={field.placeholder}
-            required={field.required}
-          />
+          <div aria-invalid={Boolean(error)}>
+            <PhoneInput
+              value={value}
+              onChange={onChange}
+              placeholder={field.placeholder}
+              required={field.required}
+            />
+          </div>
+          <ErrorText>{error}</ErrorText>
           <Label className="text-[11px] font-medium text-muted-foreground">
             Confirme seu telefone
             {field.required && <span className="text-destructive ml-1">*</span>}
           </Label>
-          <PhoneInput
-            value={confirmValue}
-            onChange={onConfirmChange}
-            placeholder={field.placeholder}
-            required={field.required}
-          />
-          {confirmValue && !phonesMatch && (
-            <p className="text-[11px] text-destructive">Os números não conferem.</p>
-          )}
+          <div aria-invalid={Boolean(confirmError)}>
+            <PhoneInput
+              value={confirmValue}
+              onChange={onConfirmChange}
+              placeholder={field.placeholder}
+              required={field.required}
+            />
+          </div>
+          <ErrorText>
+            {confirmError || (confirmValue && !phonesMatch ? "Os números não conferem." : "")}
+          </ErrorText>
         </div>
       ) : field.type === "cpf_cnpj" ? (
         <div className="space-y-1">
@@ -257,48 +322,62 @@ function FieldRow({ field, value, confirmValue, onChange, onConfirmChange }) {
             value={value}
             onChange={(e) => onChange(formatCpfCnpj(e.target.value))}
             placeholder={field.placeholder || "000.000.000-00"}
-            className="h-11 rounded-xl"
+            aria-invalid={Boolean(error)}
+            className={`h-11 rounded-xl ${error ? errorClass : ""}`}
             maxLength={18}
           />
           {(() => {
             const digits = value.replace(/\D/g, "");
             const complete = digits.length === 11 || digits.length === 14;
-            return complete && !isValidCpfCnpj(value) ? (
-              <p className="text-[11px] text-destructive">CPF ou CNPJ inválido.</p>
-            ) : null;
+            const invalid = error || (complete && !isValidCpfCnpj(value) ? "CPF ou CNPJ inválido." : "");
+            return <ErrorText>{invalid}</ErrorText>;
           })()}
         </div>
       ) : field.type === "textarea" ? (
-        <Textarea
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-          rows={3}
-          className="rounded-xl resize-none"
-        />
+        <>
+          <Textarea
+            id={id}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+            rows={3}
+            aria-invalid={Boolean(error)}
+            className={`rounded-xl resize-none ${error ? errorClass : ""}`}
+          />
+          <ErrorText>{error}</ErrorText>
+        </>
       ) : field.type === "select" ? (
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="h-11 rounded-xl">
-            <SelectValue placeholder={field.placeholder || "Selecione"} />
-          </SelectTrigger>
-          <SelectContent>
-            {(field.options || []).map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <>
+          <Select value={value} onValueChange={onChange}>
+            <SelectTrigger
+              aria-invalid={Boolean(error)}
+              className={`h-11 rounded-xl ${error ? errorClass : ""}`}
+            >
+              <SelectValue placeholder={field.placeholder || "Selecione"} />
+            </SelectTrigger>
+            <SelectContent>
+              {(field.options || []).map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ErrorText>{error}</ErrorText>
+        </>
       ) : (
-        <Input
-          id={id}
-          type={field.type === "number" ? "number" : field.type === "email" ? "email" : "text"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-          className="h-11 rounded-xl"
-        />
+        <>
+          <Input
+            id={id}
+            type={field.type === "number" ? "number" : field.type === "email" ? "email" : "text"}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+            aria-invalid={Boolean(error)}
+            className={`h-11 rounded-xl ${error ? errorClass : ""}`}
+          />
+          <ErrorText>{error}</ErrorText>
+        </>
       )}
     </div>
   );

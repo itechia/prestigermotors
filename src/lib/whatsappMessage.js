@@ -1,11 +1,13 @@
 // Builds a rich WhatsApp message for a vehicle, including the public link
 // and details so WhatsApp shows a link preview (cover image) automatically.
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
+import { vehiclePath } from "@/lib/vehicleUrl";
 
 // Returns the absolute, shareable URL of a vehicle (front-end origin).
 export function buildVehicleUrl(vehicle) {
-  if (typeof window === "undefined" || !vehicle?.id) return "";
-  return `${window.location.origin}/veiculo/${vehicle.id}`;
+  if (typeof window === "undefined" || !vehicle) return "";
+  const path = vehiclePath(vehicle);
+  return path === "/" ? "" : `${window.location.origin}${path}`;
 }
 
 // Builds a multi-line message. Putting the link on its own line lets

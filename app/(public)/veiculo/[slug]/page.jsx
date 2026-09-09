@@ -1,33 +1,37 @@
+import { notFound, permanentRedirect } from "next/navigation";
 import VehicleDetail from "@/views/VehicleDetail";
+import JsonLd from "@/components/JsonLd";
+import { buildVehicleJsonLd } from "@/lib/structuredData";
 import { formatCurrency, formatMileage, formatYear } from "@/lib/formatters";
-import { getCachedStoreName, getCachedVehicleDetail } from "@/lib/serverPublicData";
+import { getBaseUrl, absoluteUrl } from "@/lib/siteUrl";
+import { isUuid, vehiclePath } from "@/lib/vehicleUrl";
+import {
+  getCachedStoreName,
+  getCachedVehicleDetail,
+  getCachedVehicleBySlug,
+  getCachedPublicSettings,
+} from "@/lib/serverPublicData";
 
-function getBaseUrl() {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) return explicit.replace(/\/$/, "");
-
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-  if (vercel) return `https://${vercel}`.replace(/\/$/, "");
-
-  return "http://localhost:3000";
-}
-
-function absoluteUrl(url) {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  return `${getBaseUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
+// A rota aceita a slug (novo formato) e o UUID (links antigos já compartilhados).
+async function resolveVehicle(param) {
+  const key = decodeURIComponent(param || "");
+  if (!key) return null;
+  return isUuid(key)
+    ? await getCachedVehicleDetail(key)
+    : await getCachedVehicleBySlug(key);
 }
 
 export async function generateMetadata({ params }) {
   const [vehicle, storeName] = await Promise.all([
-    getCachedVehicleDetail(params.id),
+    resolveVehicle(params.slug),
     getCachedStoreName(),
   ]);
 
   if (!vehicle) {
     return {
-      title: `Veículo não encontrado | ${storeName}`,
-      description: `Confira o catálogo da ${storeName}.`,
+      title: "Veículo não encontrado",
+      description: `Este anúncio saiu do ar. Confira os veículos disponíveis no catálogo da ${storeName}.`,
+      robots: { index: false, follow: true },
     };
   }
 
@@ -42,17 +46,20 @@ export async function generateMetadata({ params }) {
   ].filter(Boolean);
   const price = vehicle.price ? formatCurrency(vehicle.price) : "";
   const description = [
-    `Olha o que eu encontrei no site da ${storeName}.`,
+    `${fullName} à venda na ${storeName}.`,
     specs.join(" • "),
-    price,
+    price ? `Por ${price}.` : "",
+    "Veja as fotos, a ficha completa e fale com a equipe pelo WhatsApp.",
   ].filter(Boolean).join(" ");
-  const pageUrl = `${getBaseUrl()}/veiculo/${vehicle.id}`;
+  const pageUrl = `${getBaseUrl()}${vehiclePath(vehicle)}`;
   const image = absoluteUrl(vehicle.images?.[0]);
+  const title = `${fullName}${year ? ` ${year}` : ""}${price ? ` | ${price}` : ""}`;
 
   return {
-    title: `${fullName} | ${storeName}`,
+    title,
     description,
     alternates: { canonical: pageUrl },
+    robots: vehicle.hidden ? { index: false, follow: false } : undefined,
     openGraph: {
       title: fullName,
       description,
@@ -61,7 +68,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       locale: "pt_BR",
       images: image
-        ? [{ url: image, width: 1200, height: 900, alt: fullName }]
+        ? [{ url: image, width: 1200, height: 900, alt: `${fullName} — foto do veículo` }]
         : undefined,
     },
     twitter: {
@@ -73,7 +80,26 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function Page({ params }) {
-  const vehicle = await getCachedVehicleDetail(params.id);
-  return <VehicleDetail initialVehicle={vehicle} />;
+export default async function Page({ params, searchParams }) {
+  const [vehicle, settings] = await Promise.all([
+    resolveVehicle(params.slug),
+    getCachedPublicSettings().catch(() => null),
+  ]);
+
+  if (!vehicle) notFound();
+
+  // Rede de segurança: o 308 normalmente vem do middleware; se ele não rodar,
+  // o link antigo (UUID) ainda assim vai parar na URL com slug.
+  if (vehicle.slug && isUuid(decodeURIComponent(params.slug || ""))) {
+    const path = vehiclePath(vehicle);
+    const query = new URLSearchParams(searchParams || {}).toString();
+    permanentRedirect(query ? `${path}?${query}` : path);
+  }
+
+  return (
+    <>
+      <JsonLd data={buildVehicleJsonLd(vehicle, settings)} />
+      <VehicleDetail initialVehicle={vehicle} />
+    </>
+  );
 }

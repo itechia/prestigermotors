@@ -12,6 +12,7 @@ import { useStoreSettings } from "@/lib/useStoreSettings";
 import ThemeToggle from "@/components/ThemeToggle";
 import BrandHead from "@/components/BrandHead";
 import SiteFooter from "@/components/SiteFooter";
+import MobileStickyCta from "@/components/MobileStickyCta";
 import { getStoreNameFontStyle } from "@/lib/fonts";
 import { useLeadPrefillFromLocation, withLeadPrefill } from "@/lib/prefillParams";
 
@@ -41,6 +42,10 @@ export default function Layout({ children }) {
   }
   if (isAdmin) navItems.push({ to: "/admin", label: "Admin", icon: LayoutGrid });
 
+  // A página de veículo e a de agradecimento já trazem o próprio CTA.
+  const hidesStickyCta =
+    pathname.startsWith("/veiculo") || pathname.startsWith("/obrigado");
+
   const isActive = (to) =>
     to === "/" ? pathname === "/" : pathname.startsWith(to);
 
@@ -57,7 +62,7 @@ export default function Layout({ children }) {
             {settings.logo_url ? (
               <img
                 src={settings.logo_url}
-                alt={settings.store_name}
+                alt={`Logotipo da ${settings.store_name}`}
                 className="h-9 w-auto object-contain"
                 width={36}
                 height={36}
@@ -114,6 +119,11 @@ export default function Layout({ children }) {
           {children}
         </Suspense>
       </main>
+
+      {/* CTA fixo no mobile — oculto onde a própria página já tem um */}
+      {!isAdminRoute && !hidesStickyCta && (
+        <MobileStickyCta variant={pathname === "/" ? "catalog" : "page"} />
+      )}
 
       {/* Footer and mobile nav are hidden on admin pages */}
       {!isAdminRoute && <SiteFooter />}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/api/supabaseClient";
 import { fetchVehiclesAdmin, VEHICLES_ADMIN_QUERY_KEY } from "@/lib/vehicleQueries";
-import { Plus, Car, Eye, CheckCircle2, DollarSign, Flame, ArrowRight, Settings, Inbox, ReceiptText } from "lucide-react";
+import { Plus, Car, Eye, CheckCircle2, DollarSign, Flame, ArrowRight, BarChart3, Inbox, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/formatters";
 import AdminShell from "../components/admin/AdminShell";
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
         <StatTile icon={DollarSign} label="Valor em estoque" value={formatCurrency(totalValue)} loading={isLoading} compact />
       </div>
 
-      <div className="grid md:grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         <QuickAction
           href="/admin/veiculos"
           icon={Car}
@@ -85,10 +85,10 @@ export default function AdminDashboard() {
         />
         {isAdmin && (
           <QuickAction
-            href="/admin/configuracoes"
-            icon={Settings}
-            title="Configurações"
-            desc="Conteúdo, identidade e integrações do site"
+            href="/admin/analitico"
+            icon={BarChart3}
+            title="Analítico do site"
+            desc="Veículos mais vistos e taxa de interesse"
           />
         )}
       </div>

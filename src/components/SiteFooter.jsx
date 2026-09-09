@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { useStoreSettings } from "@/lib/useStoreSettings";
 import { usePublicSitePages } from "@/lib/usePublicSitePages";
 import { getStoreNameFontStyle } from "@/lib/fonts";
@@ -66,6 +67,10 @@ export default function SiteFooter() {
   const sitePages = usePublicSitePages();
   const year = new Date().getFullYear();
 
+  // Não repetir no rodapé uma página do admin que use o mesmo slug das legais.
+  const legalSlugs = new Set(["privacidade", "termos"]);
+  const extraPages = sitePages.filter((p) => !legalSlugs.has(p.slug));
+
   return (
     <footer className="border-t border-border bg-background mt-6 md:mt-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -74,7 +79,7 @@ export default function SiteFooter() {
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               {s.logo_url && (
-                <img src={s.logo_url} alt={s.store_name} className="h-8 w-auto object-contain" width={32} height={32} />
+                <img src={s.logo_url} alt={`Logotipo da ${s.store_name}`} className="h-8 w-auto object-contain" width={32} height={32} />
               )}
               <span
                 className="text-lg tracking-tight"
@@ -110,19 +115,23 @@ export default function SiteFooter() {
 
         <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center text-xs text-muted-foreground">
           <span>© {year} {s.store_name}. Todos os direitos reservados.</span>
-          {sitePages.length > 0 && (
-            <div className="flex items-center flex-wrap justify-center gap-x-4 gap-y-1">
-              {sitePages.map((page) => (
-                <a
-                  key={page.id}
-                  {...resolveSitePageLink(page)}
-                  className="hover:text-foreground hover:underline transition-colors"
-                >
-                  {page.title}
-                </a>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center flex-wrap justify-center gap-x-4 gap-y-1">
+            <Link href="/privacidade" className="hover:text-foreground hover:underline transition-colors">
+              Política de Privacidade
+            </Link>
+            <Link href="/termos" className="hover:text-foreground hover:underline transition-colors">
+              Termos de Uso
+            </Link>
+            {extraPages.map((page) => (
+              <a
+                key={page.id}
+                {...resolveSitePageLink(page)}
+                className="hover:text-foreground hover:underline transition-colors"
+              >
+                {page.title}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

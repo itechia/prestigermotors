@@ -10,6 +10,8 @@ import InterestFormDialog from "@/components/vehicles/InterestFormDialog";
 import { buildWhatsAppHref } from "@/lib/whatsappMessage";
 import { fetchVehicleDetail } from "@/lib/vehicleQueries";
 import { withLeadPrefill } from "@/lib/prefillParams";
+import { vehiclePath } from "@/lib/vehicleUrl";
+import { track } from "@/lib/analytics";
 import OptimizedImage from "@/components/vehicles/OptimizedImage";
 
 function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} }) {
@@ -23,7 +25,7 @@ function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} 
   const hasDiscount = Boolean(vehicle.price_old && vehicle.price_old > vehicle.price);
   const savings = hasDiscount ? vehicle.price_old - vehicle.price : 0;
   const discountPct = hasDiscount ? Math.round((savings / vehicle.price_old) * 100) : 0;
-  const detailHref = withLeadPrefill(`/veiculo/${vehicle.id}`, leadPrefill);
+  const detailHref = withLeadPrefill(vehiclePath(vehicle), leadPrefill);
 
   const prefetchDetail = () => {
     queryClient.prefetchQuery({
@@ -36,9 +38,11 @@ function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} 
   const handleInterest = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    track("interest_click", { vehicle, source: "catalogo" });
     if (settings.interest_webhook_enabled) {
       setInterestOpen(true);
     } else {
+      track("whatsapp_click", { vehicle, source: "catalogo" });
       window.open(buildWhatsAppHref(settings.whatsapp_number, vehicle), "_blank");
     }
   };

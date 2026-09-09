@@ -3,16 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import MarkdownContent from "@/components/MarkdownContent";
 import { getCachedSitePage, getCachedStoreName } from "@/lib/serverPublicData";
-
-function getBaseUrl() {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) return explicit.replace(/\/$/, "");
-
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-  if (vercel) return `https://${vercel}`.replace(/\/$/, "");
-
-  return "http://localhost:3000";
-}
+import { getBaseUrl } from "@/lib/siteUrl";
 
 export async function generateMetadata({ params }) {
   const [page, storeName] = await Promise.all([
@@ -21,13 +12,38 @@ export async function generateMetadata({ params }) {
   ]);
 
   if (!page) {
-    return { title: `Página não encontrada | ${storeName}` };
+    return {
+      title: "Página não encontrada",
+      description: `Esta página não está mais disponível. Veja o catálogo da ${storeName}.`,
+      robots: { index: false, follow: true },
+    };
   }
 
+  const excerpt = String(page.body_markdown || "")
+    .replace(/[#>*_`~-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 155);
+  const description = excerpt || `${page.title} — ${storeName}.`;
+  const url = `${getBaseUrl()}/pagina/${page.slug}`;
+
   return {
-    title: `${page.title} | ${storeName}`,
-    description: `${page.title} — ${storeName}.`,
-    alternates: { canonical: `${getBaseUrl()}/pagina/${page.slug}` },
+    title: page.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: `${page.title} | ${storeName}`,
+      description,
+      url,
+      type: "article",
+      images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: storeName }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: page.title,
+      description,
+      images: ["/opengraph-image.png"],
+    },
   };
 }
 

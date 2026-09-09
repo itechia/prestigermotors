@@ -108,9 +108,10 @@ export default function Reviews() {
             {r.photo && (
               <img
                 src={r.photo}
-                alt=""
+                alt={`Foto enviada por ${r.name || "um cliente"} junto com a avaliação`}
                 className="mt-3 w-full aspect-[4/3] object-cover rounded-2xl"
                 loading="lazy"
+                decoding="async"
                 width={320}
                 height={240}
               />

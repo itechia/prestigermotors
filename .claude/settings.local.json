@@ -39,10 +39,21 @@
       "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" restore --staged .claude/settings.local.json)",
       "Bash(git -C \"C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884\" log --oneline -3)",
       "Bash(git -C 'C:\\\\Users\\\\Rogério Pimentel\\\\OneDrive\\\\Área de Trabalho\\\\Prestiger Motors\\\\.claude\\\\worktrees\\\\sad-leavitt-bda884' commit -m ' *)",
-      "mcp__claude_ai_Vercel__get_runtime_logs"
+      "mcp__claude_ai_Vercel__get_runtime_logs",
+      "Bash(npx --no-install supabase --version)",
+      "Bash(npx --no-install chromium-cli --version)",
+      "Bash(command -v chromium-cli)",
+      "Read(//c//**)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npm ls *)",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(rm -f /tmp/resp2.html)",
+      "Bash(git add *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory"
+      "c:\\Users\\Rogério Pimentel\\.claude\\projects\\c--Users-Rog-rio-Pimentel-OneDrive--rea-de-Trabalho-Prestiger-Motors\\memory",
+      "\\tmp"
     ]
   }
 }

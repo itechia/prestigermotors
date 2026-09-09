@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/api/supabaseClient";
 import { uploadFile } from "@/lib/uploadFile";
 import { toast } from "sonner";
@@ -6,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, X, CheckCircle2, Send } from "lucide-react";
+import { Upload, Loader2, X, Send, AlertCircle } from "lucide-react";
 import BrlInput from "@/components/admin/BrlInput";
 import PhoneInput from "@/components/PhoneInput";
+import { track } from "@/lib/analytics";
 
 const INITIAL = {
   owner_name: "",
@@ -41,13 +43,23 @@ function buildInitial(defaultValues = {}) {
 }
 
 export default function SellLeadForm({ defaultValues = {} }) {
+  const router = useRouter();
   const [form, setForm] = useState(() => buildInitial(defaultValues));
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const successRef = useRef(null);
+  // Erros por campo — exibidos abaixo de cada input, não só em toast.
+  const [errors, setErrors] = useState({});
+  const formRef = useRef(null);
 
-  const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const update = (key, value) => {
+    setForm((f) => ({ ...f, [key]: value }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   useEffect(() => {
     setForm((current) => ({
@@ -57,13 +69,6 @@ export default function SellLeadForm({ defaultValues = {} }) {
       owner_phone_confirm: current.owner_phone_confirm || defaultValues.phone || "",
     }));
   }, [defaultValues]);
-
-  // After success, scroll to the success card so the user clearly sees the confirmation
-  useEffect(() => {
-    if (done && successRef.current) {
-      successRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [done]);
 
   const handleFiles = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -75,10 +80,13 @@ export default function SellLeadForm({ defaultValues = {} }) {
       );
       const urls = uploads.map((u) => u.file_url);
       update("images", [...(form.images || []), ...urls]);
-    } catch {
-      toast.error("Erro ao enviar fotos");
+    } catch (err) {
+      const message = err?.message || "Não conseguimos enviar as fotos. Tente novamente.";
+      setErrors((prev) => ({ ...prev, images: message }));
+      toast.error(message);
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -88,29 +96,71 @@ export default function SellLeadForm({ defaultValues = {} }) {
   const phonesMatch =
     form.owner_phone && form.owner_phone === form.owner_phone_confirm;
 
+  // Validação campo a campo — a mensagem aparece junto do input com problema.
+  const validate = () => {
+    const next = {};
+    const currentYear = new Date().getFullYear();
+
+    if (!form.owner_name.trim()) next.owner_name = "Informe o seu nome completo.";
+    else if (form.owner_name.trim().length < 3) next.owner_name = "Nome muito curto.";
+
+    const phoneDigits = (form.owner_phone || "").replace(/D/g, "");
+    if (!phoneDigits) next.owner_phone = "Informe um telefone para contato.";
+    else if (phoneDigits.length < 12) next.owner_phone = "Telefone incompleto. Inclua o DDD.";
+
+    if (!form.owner_phone_confirm) next.owner_phone_confirm = "Confirme o telefone digitado.";
+    else if (form.owner_phone !== form.owner_phone_confirm)
+      next.owner_phone_confirm = "Os números não conferem.";
+
+    if (form.owner_email && !/^[^s@]+@[^s@]+.[^s@]{2,}$/.test(form.owner_email))
+      next.owner_email = "E-mail inválido. Exemplo: voce@exemplo.com";
+
+    if (!form.brand.trim()) next.brand = "Informe a marca do veículo.";
+    if (!form.model.trim()) next.model = "Informe o modelo do veículo.";
+
+    const year = Number(form.year);
+    if (!form.year) next.year = "Informe o ano do modelo.";
+    else if (!year || year < 1950 || year > currentYear + 1)
+      next.year = `Ano inválido. Use um valor entre 1950 e ${currentYear + 1}.`;
+
+    if (form.manufacture_year) {
+      const mYear = Number(form.manufacture_year);
+      if (!mYear || mYear < 1950 || mYear > currentYear + 1)
+        next.manufacture_year = "Ano de fabricação inválido.";
+    }
+
+    if (form.mileage && Number(form.mileage) < 0)
+      next.mileage = "A quilometragem não pode ser negativa.";
+
+    if (!form.asking_price || form.asking_price <= 0)
+      next.asking_price = "Informe quanto você pretende receber.";
+
+    if (!form.images || form.images.length === 0)
+      next.images = "Envie ao menos uma foto do veículo.";
+
+    return next;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Generic required fields — work for cars, motorcycles, trucks, etc.
-    const requiredOk =
-      form.owner_name &&
-      form.owner_phone &&
-      form.brand &&
-      form.model &&
-      form.year &&
-      form.asking_price > 0;
 
-    if (!requiredOk) {
-      toast.error("Preencha todos os campos obrigatórios marcados com *.");
+    const found = validate();
+    setErrors(found);
+    const keys = Object.keys(found);
+    if (keys.length > 0) {
+      toast.error(
+        keys.length === 1
+          ? found[keys[0]]
+          : `Revise ${keys.length} campos destacados em vermelho.`
+      );
+      const firstField = formRef.current?.querySelector('[aria-invalid="true"]');
+      if (firstField) {
+        firstField.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (typeof firstField.focus === "function") firstField.focus({ preventScroll: true });
+      }
       return;
     }
-    if (!form.images || form.images.length === 0) {
-      toast.error("Envie ao menos uma foto do veículo.");
-      return;
-    }
-    if (form.owner_phone !== form.owner_phone_confirm) {
-      toast.error("Os números de telefone não conferem. Confirme o número.");
-      return;
-    }
+
     setSubmitting(true);
     try {
       const now = new Date().toISOString();
@@ -146,81 +196,69 @@ export default function SellLeadForm({ defaultValues = {} }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lead_id: leadId }),
       }).catch(() => {});
-      setDone(true);
+      track("sell_lead_submit");
+      router.push("/obrigado?tipo=venda");
     } catch {
+      setErrors({ submit: "Não conseguimos enviar agora. Verifique sua conexão e tente novamente." });
       toast.error("Tivemos um problema inesperado. Tente novamente mais tarde.");
-    } finally {
       setSubmitting(false);
     }
   };
 
-  if (done) {
-    return (
-      <div
-        ref={successRef}
-        className="bg-card rounded-3xl p-8 md:p-12 border border-border/50 text-center"
-      >
-        <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-5">
-          <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
-        </div>
-        <h2 className="font-display font-bold text-2xl md:text-3xl">Proposta enviada!</h2>
-        <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-          Recebemos os dados do seu veículo. Nossa equipe vai analisar e entrar em contato em breve.
-        </p>
-        <Button
-          onClick={() => {
-            setForm(buildInitial(defaultValues));
-            setDone(false);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          variant="outline"
-          className="mt-6 rounded-full"
-        >
-          Enviar outro veículo
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5" noValidate>
       <Section title="Seus dados de contato" desc="Para nossa equipe entrar em contato e fechar a proposta com você.">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Nome completo *">
-            <Input value={form.owner_name} onChange={(e) => update("owner_name", e.target.value)} />
+          <Field label="Nome completo *" error={errors.owner_name}>
+            <Input
+              value={form.owner_name}
+              onChange={(e) => update("owner_name", e.target.value)}
+              aria-invalid={Boolean(errors.owner_name)}
+              className={errors.owner_name ? "border-destructive focus-visible:ring-destructive" : ""}
+            />
           </Field>
 
           <Field label="Cidade">
             <Input value={form.owner_city} onChange={(e) => update("owner_city", e.target.value)} placeholder="Onde o veículo está" />
           </Field>
 
-          <Field label="WhatsApp / Telefone *" className="sm:col-span-2">
-            <PhoneInput
-              value={form.owner_phone}
-              onChange={(v) => update("owner_phone", v)}
-              placeholder="(11) 99999-9999"
-              required
-            />
+          <Field label="WhatsApp / Telefone *" className="sm:col-span-2" error={errors.owner_phone}>
+            <div aria-invalid={Boolean(errors.owner_phone)}>
+              <PhoneInput
+                value={form.owner_phone}
+                onChange={(v) => update("owner_phone", v)}
+                placeholder="(11) 99999-9999"
+                required
+              />
+            </div>
           </Field>
 
-          <Field label="Confirme seu telefone *" className="sm:col-span-2">
-            <PhoneInput
-              value={form.owner_phone_confirm}
-              onChange={(v) => update("owner_phone_confirm", v)}
-              placeholder="(11) 99999-9999"
-              required
-            />
-            {form.owner_phone_confirm && !phonesMatch && (
-              <p className="text-[11px] text-destructive mt-1">Os números não conferem.</p>
-            )}
+          <Field
+            label="Confirme seu telefone *"
+            className="sm:col-span-2"
+            error={
+              errors.owner_phone_confirm ||
+              (form.owner_phone_confirm && !phonesMatch ? "Os números não conferem." : "")
+            }
+          >
+            <div aria-invalid={Boolean(errors.owner_phone_confirm)}>
+              <PhoneInput
+                value={form.owner_phone_confirm}
+                onChange={(v) => update("owner_phone_confirm", v)}
+                placeholder="(11) 99999-9999"
+                required
+              />
+            </div>
           </Field>
 
-          <Field label="E-mail" className="sm:col-span-2">
+          <Field label="E-mail" className="sm:col-span-2" error={errors.owner_email}>
             <Input
               type="email"
               value={form.owner_email}
               onChange={(e) => update("owner_email", e.target.value)}
               placeholder="voce@exemplo.com"
+              aria-invalid={Boolean(errors.owner_email)}
+              className={errors.owner_email ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
         </div>
@@ -239,18 +277,22 @@ export default function SellLeadForm({ defaultValues = {} }) {
             />
           </Field>
 
-          <Field label="Marca *">
+          <Field label="Marca *" error={errors.brand}>
             <Input
               value={form.brand}
               onChange={(e) => update("brand", e.target.value)}
               placeholder="Ex: Volkswagen, Honda, Scania..."
+              aria-invalid={Boolean(errors.brand)}
+              className={errors.brand ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
-          <Field label="Modelo *">
+          <Field label="Modelo *" error={errors.model}>
             <Input
               value={form.model}
               onChange={(e) => update("model", e.target.value)}
               placeholder="Ex: Golf, CG 160, R450..."
+              aria-invalid={Boolean(errors.model)}
+              className={errors.model ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
           <Field label="Versão / Acabamento">
@@ -267,31 +309,37 @@ export default function SellLeadForm({ defaultValues = {} }) {
               placeholder="Ex: Prata"
             />
           </Field>
-          <Field label="Ano modelo *">
+          <Field label="Ano modelo *" error={errors.year}>
             <Input
               type="number"
               inputMode="numeric"
               value={form.year}
               onChange={(e) => update("year", e.target.value)}
               placeholder="2020"
+              aria-invalid={Boolean(errors.year)}
+              className={errors.year ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
-          <Field label="Ano fabricação">
+          <Field label="Ano fabricação" error={errors.manufacture_year}>
             <Input
               type="number"
               inputMode="numeric"
               value={form.manufacture_year}
               onChange={(e) => update("manufacture_year", e.target.value)}
               placeholder="2020"
+              aria-invalid={Boolean(errors.manufacture_year)}
+              className={errors.manufacture_year ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
-          <Field label="Quilometragem">
+          <Field label="Quilometragem" error={errors.mileage}>
             <Input
               type="number"
               inputMode="numeric"
               value={form.mileage}
               onChange={(e) => update("mileage", e.target.value)}
               placeholder="50000"
+              aria-invalid={Boolean(errors.mileage)}
+              className={errors.mileage ? "border-destructive focus-visible:ring-destructive" : ""}
             />
           </Field>
           <Field label="Combustível">
@@ -308,8 +356,10 @@ export default function SellLeadForm({ defaultValues = {} }) {
               placeholder="Ex: Manual, Automático, CVT..."
             />
           </Field>
-          <Field label="Valor pretendido *">
-            <BrlInput value={form.asking_price} onChange={(v) => update("asking_price", v)} />
+          <Field label="Valor pretendido *" error={errors.asking_price}>
+            <div aria-invalid={Boolean(errors.asking_price)}>
+              <BrlInput value={form.asking_price} onChange={(v) => update("asking_price", v)} />
+            </div>
           </Field>
         </div>
 
@@ -327,10 +377,22 @@ export default function SellLeadForm({ defaultValues = {} }) {
         title="Fotos do veículo *"
         desc="Envie pelo menos uma foto. Quanto mais ângulos, melhor: frente, traseira, laterais, painel, motor e detalhes. JPG ou PNG, até 10 fotos."
       >
+        {errors.images && (
+          <p role="alert" className="flex items-start gap-1 text-[11px] text-destructive mb-2">
+            <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            {errors.images}
+          </p>
+        )}
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
           {(form.images || []).map((img, i) => (
             <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-secondary group">
-              <img src={img} alt="" className="w-full h-full object-cover" />
+              <img
+                src={img}
+                alt={`Foto ${i + 1} do veículo enviada por você`}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
               <button
                 type="button"
                 onClick={() => removeImage(i)}
@@ -357,9 +419,19 @@ export default function SellLeadForm({ defaultValues = {} }) {
         </div>
       </Section>
 
+      {errors.submit && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+        >
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+          {errors.submit}
+        </div>
+      )}
+
       <Button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || uploading}
         className="w-full rounded-full h-12 font-semibold"
       >
         {submitting ? (
@@ -382,11 +454,17 @@ function Section({ title, desc, children }) {
   );
 }
 
-function Field({ label, children, className = "" }) {
+function Field({ label, children, className = "", error }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
       <Label className="text-sm">{label}</Label>
       {children}
+      {error && (
+        <p role="alert" className="flex items-start gap-1 text-[11px] text-destructive">
+          <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }

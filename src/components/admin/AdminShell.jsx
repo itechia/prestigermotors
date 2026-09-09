@@ -17,6 +17,7 @@ import {
   ChevronRight,
   UserCheck,
   UserCircle,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStoreSettings } from "@/lib/useStoreSettings";
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/admin/veiculos", label: "Veículos", icon: Car },
   { to: "/admin/vendas", label: "Vendas", icon: ReceiptText },
   { to: "/admin/propostas", label: "Propostas", icon: Inbox },
+  { to: "/admin/analitico", label: "Analítico", icon: BarChart3, adminOnly: true },
   { to: "/admin/usuarios", label: "Usuários", icon: Users, adminOnly: true },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, adminOnly: true },
 ];
@@ -41,6 +43,7 @@ const MODULE_BY_ROUTE = {
   "/admin/veiculos": "veiculos",
   "/admin/vendas": "vendas",
   "/admin/propostas": "propostas",
+  "/admin/analitico": "analitico",
   "/admin/usuarios": "usuarios",
   "/admin/configuracoes": "configuracoes",
 };

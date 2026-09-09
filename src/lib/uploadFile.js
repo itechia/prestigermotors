@@ -1,4 +1,5 @@
 import { supabase } from "@/api/supabaseClient";
+import { compressImage } from "@/lib/compressImage";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -33,14 +34,18 @@ export async function deleteStorageFile(url) {
   }
 }
 
-export async function uploadFile({ file, maxBytes }) {
+export async function uploadFile({ file: original, maxBytes, compress = true }) {
+  if (!ALLOWED_IMAGE_TYPES.has(original.type)) {
+    throw new Error("Formato de imagem nao permitido. Use JPG, PNG, WebP ou GIF.");
+  }
+
+  // Redimensiona e recomprime no navegador antes de subir: catálogo mais leve
+  // e menos fotos recusadas por tamanho.
+  const file = compress ? await compressImage(original) : original;
+
   const effectiveMaxBytes = maxBytes || MAX_UPLOAD_BYTES;
   if (file.size > effectiveMaxBytes) {
     throw new Error(`Arquivo muito grande. Máximo permitido: ${formatBytes(effectiveMaxBytes)}.`);
-  }
-
-  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    throw new Error("Formato de imagem nao permitido. Use JPG, PNG, WebP ou GIF.");
   }
 
   const ext = file.name.split(".").pop();
@@ -52,7 +57,11 @@ export async function uploadFile({ file, maxBytes }) {
 
   const { error } = await supabase.storage
     .from("uploads")
-    .upload(path, file, { cacheControl: "31536000", upsert: false });
+    .upload(path, file, {
+      cacheControl: "31536000",
+      upsert: false,
+      contentType: file.type,
+    });
 
   if (error) throw error;
 

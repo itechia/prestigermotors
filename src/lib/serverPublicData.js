@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 
 const CATALOG_COLS = [
-  "id", "brand", "model", "version",
+  "id", "slug", "brand", "model", "version",
   "year", "manufacture_year", "mileage",
   "price", "price_old", "images", "has_embed",
   "featured", "status", "hidden", "stock_quantity",
@@ -13,7 +13,7 @@ const CATALOG_COLS = [
 ].join(",");
 
 const DETAIL_COLS = [
-  "id", "brand", "model", "version",
+  "id", "slug", "brand", "model", "version",
   "year", "manufacture_year", "mileage",
   "price", "price_old", "images", "has_embed",
   "featured", "status", "hidden", "vehicle_type",
@@ -65,6 +65,24 @@ export const getCachedVehicleDetail = unstable_cache(
     return data ?? null;
   },
   ["public-vehicle-detail-v2"],
+  { revalidate: 60, tags: ["public-vehicles"] }
+);
+
+export const getCachedVehicleBySlug = unstable_cache(
+  async (slug) => {
+    const supabase = getPublicSupabase();
+    if (!supabase || !slug) return null;
+
+    const { data, error } = await supabase
+      .from("vehicles")
+      .select(DETAIL_COLS)
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ?? null;
+  },
+  ["public-vehicle-by-slug-v1"],
   { revalidate: 60, tags: ["public-vehicles"] }
 );
 

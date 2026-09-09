@@ -14,6 +14,42 @@ import Reviews from "../components/vehicles/Reviews";
 import { slugify } from "@/lib/useTaxonomies";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toInterestDefaults, useLeadPrefillFromLocation } from "@/lib/prefillParams";
+import { track } from "@/lib/analytics";
+
+// Nomes amigáveis dos filtros no relatório do admin.
+const FILTER_LABELS = {
+  vehicle_type: "tipo",
+  body_type: "categoria",
+  fuel_type: "combustível",
+  transmission: "câmbio",
+  condition: "condição",
+  color: "cor",
+  brand: "marca",
+  model: "modelo",
+  priceMin: "preço mínimo",
+  priceMax: "preço máximo",
+  yearMin: "ano mínimo",
+  yearMax: "ano máximo",
+};
+
+// Registra apenas o que o visitante acabou de acrescentar ao filtro.
+function trackFilterChanges(previous, next) {
+  Object.entries(next || {}).forEach(([key, value]) => {
+    const before = previous?.[key];
+    const field = FILTER_LABELS[key] || key;
+
+    if (Array.isArray(value)) {
+      value
+        .filter((item) => !(before || []).includes(item))
+        .forEach((item) => track("filter", { field, value: String(item) }));
+      return;
+    }
+
+    if (value && value !== before) {
+      track("filter", { field, value: String(value) });
+    }
+  });
+}
 
 const FEATURED_LIMIT = 8;
 const REGULAR_LIMIT  = 16;
@@ -35,6 +71,9 @@ export default function Catalog({ initialVehicles = [] }) {
 
   const toggleBrand = (name) => {
     shouldScrollToResultsRef.current = true;
+    if (!selectedBrands.includes(name)) {
+      track("filter", { field: "marca", value: String(name) });
+    }
     setSelectedBrands((prev) =>
       prev.includes(name) ? prev.filter((b) => b !== name) : [...prev, name]
     );
@@ -52,8 +91,17 @@ export default function Catalog({ initialVehicles = [] }) {
 
   const updateFilters = (nextFilters) => {
     shouldScrollToResultsRef.current = true;
+    trackFilterChanges(filters, nextFilters);
     setFilters(nextFilters);
   };
+
+  // Analítico: registra o termo buscado depois que o visitante para de digitar.
+  useEffect(() => {
+    const term = search.trim();
+    if (term.length < 2) return undefined;
+    const timer = setTimeout(() => track("search", { term }), 1200);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Reset pagination whenever the user changes any filter, search or brand
   useEffect(() => {

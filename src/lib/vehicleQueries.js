@@ -4,7 +4,7 @@ import { supabase } from "@/api/supabaseClient";
 // Nao inclui description/features nem embed_html: o HTML 360 pode ser muito
 // grande e deve ser baixado somente na pagina de detalhe.
 const CATALOG_COLS = [
-  "id", "brand", "model", "version",
+  "id", "slug", "brand", "model", "version",
   "year", "manufacture_year", "mileage",
   "price", "price_old",
   "images", "has_embed",

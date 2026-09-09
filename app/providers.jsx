@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import { usePathname } from 'next/navigation';
+import CookieBanner from '@/components/CookieBanner';
+import Analytics from '@/components/Analytics';
+import PageViewTracker from '@/components/PageViewTracker';
 
 const makeQueryClient = () =>
   new QueryClient({
@@ -47,6 +50,8 @@ export function Providers({ children }) {
     return () => window.clearTimeout(id);
   }, [pathname]);
 
+  const isAdminRoute = pathname?.startsWith('/admin');
+
   return (
     <ThemeProvider>
       <AuthProvider>
@@ -54,6 +59,11 @@ export function Providers({ children }) {
           {children}
           <Toaster />
           <SonnerToaster position="top-center" richColors />
+          {!isAdminRoute && <CookieBanner />}
+          {!isAdminRoute && <PageViewTracker />}
+          <Suspense fallback={null}>
+            <Analytics />
+          </Suspense>
         </QueryClientProvider>
       </AuthProvider>
     </ThemeProvider>

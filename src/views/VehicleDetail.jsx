@@ -22,12 +22,14 @@ import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
 import { buildVehicleShareText, buildWhatsAppHref } from "@/lib/whatsappMessage";
+import { track, startVisibleTimer } from "@/lib/analytics";
 import { fetchVehicleDetail, fetchVehicleEmbed, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
 import { getLeadPrefillFromSearchParams, toInterestDefaults } from "@/lib/prefillParams";
 import OptimizedImage from "@/components/vehicles/OptimizedImage";
 
 export default function VehicleDetail({ initialVehicle = null }) {
-  const { id } = useParams();
+  // A rota é /veiculo/[slug]; links antigos ainda chegam com o UUID.
+  const { slug: routeKey } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -52,7 +54,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
     setActiveImage(0);
     setThumbOffset(0);
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, [id]);
+  }, [routeKey]);
 
   // Mantém a janela de thumbnails visível ao redor do slide ativo.
   // Deve ficar antes dos early returns para não violar a rules-of-hooks.
@@ -66,24 +68,53 @@ export default function VehicleDetail({ initialVehicle = null }) {
   }, [activeImage, thumbOffset]);
 
   const { data: vehicle, isLoading } = useQuery({
-    queryKey: ["vehicle", id],
-    queryFn: () => fetchVehicleDetail(id),
-    initialData: initialVehicle?.id === id ? initialVehicle : undefined,
+    queryKey: ["vehicle", routeKey],
+    queryFn: () => fetchVehicleDetail(routeKey),
+    initialData:
+      initialVehicle && (initialVehicle.slug === routeKey || initialVehicle.id === routeKey)
+        ? initialVehicle
+        : undefined,
     placeholderData: () => {
       const catalog = queryClient.getQueryData(VEHICLES_QUERY_KEY);
-      return Array.isArray(catalog) ? catalog.find((v) => v.id === id) : undefined;
+      return Array.isArray(catalog)
+        ? catalog.find((v) => v.slug === routeKey || v.id === routeKey)
+        : undefined;
     },
     staleTime: 60 * 60 * 1000, // 1 hora — evita troca de imagem por background refetch
   });
 
   const vehicleHasEmbed = Boolean(vehicle?.has_embed || vehicle?.embed_html?.trim());
   const { data: embedHtml = "", isFetching: isEmbedLoading } = useQuery({
-    queryKey: ["vehicle", id, "embed"],
-    queryFn: () => fetchVehicleEmbed(id),
+    queryKey: ["vehicle", routeKey, "embed"],
+    queryFn: () => fetchVehicleEmbed(routeKey),
     enabled: vehicleHasEmbed,
     staleTime: 60 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
+
+  // Analítico: uma visita por veículo aberto e o tempo realmente visível nele.
+  const vehicleId = vehicle?.id;
+  const vehicleRef = useRef(vehicle);
+  vehicleRef.current = vehicle;
+  // Guarda o último veículo contado para não somar duas visitas quando o
+  // React remonta o efeito (StrictMode em desenvolvimento). Trocar de veículo
+  // muda a chave e volta a contar normalmente.
+  const countedVehicleRef = useRef(null);
+
+  useEffect(() => {
+    if (!vehicleId) return undefined;
+    if (countedVehicleRef.current !== vehicleId) {
+      countedVehicleRef.current = vehicleId;
+      track("vehicle_view", { vehicle: vehicleRef.current });
+    }
+    const stopTimer = startVisibleTimer();
+    return () => {
+      const durationMs = stopTimer();
+      if (durationMs > 1000) {
+        track("vehicle_time", { vehicle: vehicleRef.current, durationMs });
+      }
+    };
+  }, [vehicleId]);
 
   if (isLoading) {
     return (
@@ -111,6 +142,12 @@ export default function VehicleDetail({ initialVehicle = null }) {
     : ["https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80"];
   const hasEmbed = vehicleHasEmbed;
 
+  // Nome completo do veículo — usado nos textos alternativos das fotos.
+  const vehicleFullName = [vehicle.brand, vehicle.model, vehicle.version]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
   const meta = getVehicleMeta(vehicle);
   // Coerce to boolean so JSX never renders the falsy `0` (e.g. when price_old=0).
   const hasDiscount = Boolean(vehicle.price_old && vehicle.price_old > vehicle.price);
@@ -118,6 +155,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
   const discountPct = hasDiscount ? Math.round((savings / vehicle.price_old) * 100) : 0;
 
   const handleShare = async () => {
+    track("share_click", { vehicle });
     const url = window.location.href;
     const title = `${vehicle.brand} ${vehicle.model}`.trim();
     const text = buildVehicleShareText(vehicle, settings);
@@ -140,9 +178,11 @@ export default function VehicleDetail({ initialVehicle = null }) {
   // customizable form modal instead of jumping straight to WhatsApp.
   const useInterestForm = Boolean(settings.interest_webhook_enabled);
   const handleInterestClick = () => {
+    track("interest_click", { vehicle, source: useInterestForm ? "formulario" : "whatsapp" });
     if (useInterestForm) {
       setInterestOpen(true);
     } else {
+      track("whatsapp_click", { vehicle });
       window.open(whatsappHref, "_blank", "noopener,noreferrer");
     }
   };
@@ -151,6 +191,10 @@ export default function VehicleDetail({ initialVehicle = null }) {
   const totalSlides = images.length + (hasEmbed ? 1 : 0);
   const showingEmbed = hasEmbed && activeImage === 0;
   const imageIndex = hasEmbed ? activeImage - 1 : activeImage;
+  const openFullscreen = () => {
+    track("gallery_open", { vehicle });
+    setFsSlide(activeImage);
+  };
   const nextImage = () => setActiveImage(i => (i + 1) % totalSlides);
   const prevImage = () => setActiveImage(i => (i - 1 + totalSlides) % totalSlides);
 
@@ -178,7 +222,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
                   className="vehicle-detail-gallery-media absolute inset-0 w-full h-full border-0 block"
                 />
                 <button
-                  onClick={() => setFsSlide(activeImage)}
+                  onClick={openFullscreen}
                   className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
                   aria-label="Abrir tela cheia"
                   title="Tela cheia"
@@ -195,23 +239,23 @@ export default function VehicleDetail({ initialVehicle = null }) {
             ) : showingEmbed ? (
               <EmbedLoadingPreview
                 src={images[0]}
-                alt={vehicle.model}
+                alt={`Tour 360° do ${vehicleFullName}`}
                 loading={isEmbedLoading}
               />
             ) : (
               <>
                 <OptimizedImage
                   src={images[imageIndex]}
-                  alt={vehicle.model}
+                  alt={`${vehicleFullName} — foto ${imageIndex + 1} de ${images.length}`}
                   className="vehicle-detail-gallery-media absolute inset-0 w-full h-full cursor-zoom-in"
                   fill
                   sizes="(max-width: 1024px) 100vw, 60vw"
                   quality={78}
                   priority
-                  onClick={() => setFsSlide(activeImage)}
+                  onClick={openFullscreen}
                 />
                 <button
-                  onClick={() => setFsSlide(activeImage)}
+                  onClick={openFullscreen}
                   className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/80 transition-colors"
                   aria-label="Abrir imagem em tela cheia"
                   title="Tela cheia"
@@ -282,7 +326,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
                           activeImage === 0 ? "border-primary" : "border-transparent opacity-70"
                         )}
                       >
-                        <OptimizedImage src={images[0]} alt="" className="object-cover" fill sizes="56px" quality={70} />
+                        <OptimizedImage src={images[0]} alt={`Ver o tour 360° do ${vehicleFullName}`} className="object-cover" fill sizes="56px" quality={70} />
                         <Mini360Indicator />
                       </button>
                     ) : (
@@ -296,7 +340,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
                       >
                         <OptimizedImage
                           src={images[imgIdx]}
-                          alt=""
+                          alt={`Ver a foto ${imgIdx + 1} do ${vehicleFullName}`}
                           className="object-cover"
                           fill
                           sizes="56px"
@@ -334,7 +378,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
                           activeImage === 0 ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
                         )}
                       >
-                        <OptimizedImage src={images[0]} alt="" className="object-cover" fill sizes="160px" quality={70} />
+                        <OptimizedImage src={images[0]} alt={`Ver o tour 360° do ${vehicleFullName}`} className="object-cover" fill sizes="160px" quality={70} />
                         <Mini360Indicator />
                       </button>
                     ) : (
@@ -348,7 +392,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
                       >
                         <OptimizedImage
                           src={images[imgIdx]}
-                          alt=""
+                          alt={`Ver a foto ${imgIdx + 1} do ${vehicleFullName}`}
                           className="object-cover"
                           fill
                           sizes="160px"

@@ -25,7 +25,7 @@ const SETTINGS_COLS = [
 ].join(",");
 
 const VEHICLE_COLS = [
-  "id", "brand", "model", "version", "year", "manufacture_year",
+  "id", "slug", "brand", "model", "version", "year", "manufacture_year",
   "price", "price_old", "mileage", "fuel_type", "transmission",
   "color", "body_type", "condition", "status", "featured", "images", "features",
 ].join(",");
@@ -90,7 +90,7 @@ export async function POST(request) {
       },
       vehicle: {
         ...vehicle,
-        url: `${siteUrl}/veiculo/${vehicle.id}`,
+        url: `${siteUrl}/veiculo/${vehicle.slug || vehicle.id}`,
         year_display: buildYearDisplay(vehicle.manufacture_year, vehicle.year),
         images: vehicle.images || [],
         features: vehicle.features || [],
