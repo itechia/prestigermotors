@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase } from "../admin/_utils";
+import { takeRateLimit } from "../_utils/webhookSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,6 +75,17 @@ function sanitizeEvent(raw) {
 // Endpoint público: recebe os eventos de navegação do catálogo.
 // O front só chama quando o visitante aceitou os cookies.
 export async function POST(request) {
+  // O rastreador manda em lotes a cada ~1,2s. O limite é por IP, e vários
+  // visitantes podem dividir o mesmo IP (operadora, wi-fi de loja), então fica
+  // folgado: corta quem tenta inflar a tabela sem perder evento de uso normal.
+  const rate = takeRateLimit(request, { limit: 120, windowMs: 60_000 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { ok: false },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfter) } }
+    );
+  }
+
   try {
     const raw = await request.text();
     if (!raw || raw.length > MAX_BODY_BYTES) {

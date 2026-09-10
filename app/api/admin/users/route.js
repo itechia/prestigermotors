@@ -30,8 +30,8 @@ export async function POST(request) {
   let role = body.role === "vendedor" ? "vendedor" : "admin";
   if (body.role === "super_admin" && isSuperAdmin(realProfile)) role = "super_admin";
 
-  if (!email || !password || password.length < 6) {
-    return NextResponse.json({ error: "Informe e-mail e senha com no mínimo 6 caracteres." }, { status: 400 });
+  if (!email || !password || password.length < 8) {
+    return NextResponse.json({ error: "Informe e-mail e senha com no mínimo 8 caracteres." }, { status: 400 });
   }
 
   const { data, error } = await supabase.auth.admin.createUser({

@@ -56,6 +56,20 @@ function formatRangeLabel(from, to) {
   return start === end ? start : `${start} a ${end}`;
 }
 
+// Origens conhecidas ganham nome próprio; o resto aparece como veio.
+const ORIGIN_LABELS = {
+  whatsapp: "WhatsApp",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  google: "Google",
+  buscador: "Buscadores",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  linkedin: "LinkedIn",
+  x: "X (Twitter)",
+  direto: "Acesso direto",
+};
+
 const DEVICE_LABELS = {
   mobile: "Celular",
   tablet: "Tablet",
@@ -438,7 +452,7 @@ export default function AdminAnalytics() {
         <RankCard
           title="De onde vêm"
           subtitle="Origem do acesso"
-          rows={referrers.map((r) => ({ label: r.origem, value: r.sessions }))}
+          rows={referrers.map((r) => ({ label: ORIGIN_LABELS[r.origem] || r.origem, value: r.sessions }))}
           empty="Sem origem identificada."
         />
       </div>

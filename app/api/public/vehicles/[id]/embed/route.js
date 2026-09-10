@@ -5,7 +5,8 @@ import { isUuid } from "@/lib/vehicleUrl";
 // O HTML do tour 360 é buscado pelo id; quando a rota recebe a slug,
 // resolvemos o id antes.
 export async function GET(_request, { params }) {
-  const key = decodeURIComponent(params.id || "");
+  const { id } = await params;
+  const key = decodeURIComponent(id || "");
   let vehicleId = key;
 
   if (!isUuid(key)) {

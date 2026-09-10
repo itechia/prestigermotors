@@ -21,8 +21,8 @@ export default function AdminChangePassword() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (password.length < 6) {
-      toast.error("A senha precisa ter no mínimo 6 caracteres.");
+    if (password.length < 8) {
+      toast.error("A senha precisa ter no mínimo 8 caracteres.");
       return;
     }
     if (password !== confirm) {
@@ -62,11 +62,11 @@ export default function AdminChangePassword() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Nova senha</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
           </div>
           <div className="space-y-2">
             <Label>Confirmar nova senha</Label>
-            <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={6} required />
+            <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} required />
           </div>
           <Button type="submit" className="w-full rounded-full h-11 font-semibold" disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <KeyRound className="w-4 h-4 mr-2" />}

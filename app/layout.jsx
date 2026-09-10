@@ -79,11 +79,14 @@ export const viewport = {
   viewportFit: 'cover',
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // Mesma chamada em cache usada pelos metadados: sem custo extra.
+  const settings = await getCachedPublicSettings().catch(() => null);
+
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body>
-        <Providers>{children}</Providers>
+        <Providers initialSettings={settings}>{children}</Providers>
       </body>
     </html>
   );

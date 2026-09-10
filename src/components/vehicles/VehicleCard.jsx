@@ -12,10 +12,12 @@ import { fetchVehicleDetail } from "@/lib/vehicleQueries";
 import { withLeadPrefill } from "@/lib/prefillParams";
 import { vehiclePath } from "@/lib/vehicleUrl";
 import { track } from "@/lib/analytics";
+import { useVehicleLabels } from "@/lib/taxLabels";
 import OptimizedImage from "@/components/vehicles/OptimizedImage";
 
 function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} }) {
   const settings = useStoreSettings();
+  const labels = useVehicleLabels();
   const queryClient = useQueryClient();
   const [interestOpen, setInterestOpen] = useState(false);
 
@@ -43,7 +45,7 @@ function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} 
       setInterestOpen(true);
     } else {
       track("whatsapp_click", { vehicle, source: "catalogo" });
-      window.open(buildWhatsAppHref(settings.whatsapp_number, vehicle), "_blank");
+      window.open(buildWhatsAppHref(settings.whatsapp_number, vehicle, { labels }), "_blank");
     }
   };
 
@@ -53,7 +55,7 @@ function VehicleCard({ vehicle, index = 0, leadPrefill = {}, defaultValues = {} 
         <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
           <Link
             href={detailHref}
-            className="block w-full h-full"
+            className="relative block w-full h-full"
             onMouseEnter={prefetchDetail}
             onFocus={prefetchDetail}
           >

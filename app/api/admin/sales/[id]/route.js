@@ -61,6 +61,7 @@ async function consumeStock(supabase, vehicleId, quantity) {
 }
 
 export async function PATCH(request, { params }) {
+  const { id } = await params;
   const ctx = await requireAdminContext(request);
   if (ctx.error) return ctx.error;
   const { supabase, actorUser, profile } = ctx;
@@ -69,7 +70,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "Apenas administradores podem editar vendas." }, { status: 403 });
   }
 
-  const { sale, error: saleError } = await getSale(supabase, params.id);
+  const { sale, error: saleError } = await getSale(supabase, id);
   if (saleError || !sale) return NextResponse.json({ error: "Venda nao encontrada." }, { status: 404 });
 
   const body = await request.json().catch(() => ({}));
@@ -104,7 +105,7 @@ export async function PATCH(request, { params }) {
   const { data, error } = await supabase
     .from("vehicle_sales")
     .update(nextSale)
-    .eq("id", params.id)
+    .eq("id", id)
     .select("id,vehicle_id,seller_id,quantity,sale_price,customer_name,customer_phone,payment_method,notes,sold_at,created_by,created_date")
     .single();
 
@@ -120,13 +121,14 @@ export async function PATCH(request, { params }) {
     actorId: actorUser.id,
     targetUserId: nextSale.seller_id,
     action: "venda_atualizada",
-    details: { sale_id: params.id, before: sale, after: nextSale },
+    details: { sale_id: id, before: sale, after: nextSale },
   });
 
   return NextResponse.json({ sale: data });
 }
 
 export async function DELETE(request, { params }) {
+  const { id } = await params;
   const ctx = await requireAdminContext(request);
   if (ctx.error) return ctx.error;
   const { supabase, actorUser, profile } = ctx;
@@ -135,7 +137,7 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: "Apenas administradores podem excluir vendas." }, { status: 403 });
   }
 
-  const { sale, error: saleError } = await getSale(supabase, params.id);
+  const { sale, error: saleError } = await getSale(supabase, id);
   if (saleError || !sale) return NextResponse.json({ error: "Venda nao encontrada." }, { status: 404 });
 
   try {
@@ -144,14 +146,14 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const { error } = await supabase.from("vehicle_sales").delete().eq("id", params.id);
+  const { error } = await supabase.from("vehicle_sales").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await writeAdminLog(supabase, {
     actorId: actorUser.id,
     targetUserId: sale.seller_id,
     action: "venda_excluida",
-    details: { sale_id: params.id, sale },
+    details: { sale_id: id, sale },
   });
 
   return NextResponse.json({ ok: true });

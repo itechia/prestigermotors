@@ -4,10 +4,11 @@ import { requireAdminContext, writeAdminLog } from "../../_utils";
 import { isValidSlug, slugify } from "@/lib/slug";
 
 export async function PATCH(request, { params }) {
+  const { id } = await params;
   const ctx = await requireAdminContext(request, { adminOnly: true });
   if (ctx.error) return ctx.error;
   const { supabase, actorUser: actor } = ctx;
-  const targetId = params.id;
+  const targetId = id;
   const body = await request.json().catch(() => ({}));
 
   const updates = {};
@@ -68,10 +69,11 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  const { id } = await params;
   const ctx = await requireAdminContext(request, { adminOnly: true });
   if (ctx.error) return ctx.error;
   const { supabase, actorUser: actor } = ctx;
-  const targetId = params.id;
+  const targetId = id;
 
   const { data: existing } = await supabase
     .from("site_pages")

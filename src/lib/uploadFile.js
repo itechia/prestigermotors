@@ -2,6 +2,12 @@ import { supabase } from "@/api/supabaseClient";
 import { compressImage } from "@/lib/compressImage";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+// Pastas do bucket. O visitante anônimo (formulário "vender meu veículo") só
+// tem permissão de escrita em "propostas/" — a policy do Storage recusa
+// qualquer outro caminho. A equipe logada envia para "catalogo/".
+const PASTA_PUBLICA = "propostas";
+const PASTA_INTERNA = "catalogo";
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -53,7 +59,10 @@ export async function uploadFile({ file: original, maxBytes, compress = true }) 
     .replace(/\.[^/.]+$/, "")
     .replace(/[^a-zA-Z0-9]/g, "_")
     .slice(0, 60);
-  const path = `${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
+
+  const { data: sessao } = await supabase.auth.getSession();
+  const pasta = sessao?.session ? PASTA_INTERNA : PASTA_PUBLICA;
+  const path = `${pasta}/${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
 
   const { error } = await supabase.storage
     .from("uploads")

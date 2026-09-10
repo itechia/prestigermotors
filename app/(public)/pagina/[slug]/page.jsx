@@ -6,8 +6,9 @@ import { getCachedSitePage, getCachedStoreName } from "@/lib/serverPublicData";
 import { getBaseUrl } from "@/lib/siteUrl";
 
 export async function generateMetadata({ params }) {
+  const { slug } = await params;
   const [page, storeName] = await Promise.all([
-    getCachedSitePage(params.slug),
+    getCachedSitePage(slug),
     getCachedStoreName(),
   ]);
 
@@ -48,7 +49,8 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
-  const page = await getCachedSitePage(params.slug);
+  const { slug } = await params;
+  const page = await getCachedSitePage(slug);
   if (!page || page.kind === "link") notFound();
 
   const updated = new Date(page.updated_date).toLocaleDateString("pt-BR", {

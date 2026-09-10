@@ -163,7 +163,7 @@ export default function AdminUsers() {
               </div>
               <div className="space-y-2">
                 <Label>Senha temporária</Label>
-                <Input type="password" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} minLength={6} required />
+                <Input type="password" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} minLength={8} required />
               </div>
               <div className="space-y-2">
                 <Label>Papel</Label>
@@ -344,7 +344,7 @@ export default function AdminUsers() {
             </DialogHeader>
             <div className="space-y-2">
               <Label>Nova senha temporária</Label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={6} />
+              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setResetTarget(null)}>Cancelar</Button>

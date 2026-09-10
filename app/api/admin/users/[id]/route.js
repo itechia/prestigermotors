@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { isSuperAdmin, requireAdminContext, writeAdminLog } from "../../_utils";
 
 export async function PATCH(request, { params }) {
+  const { id } = await params;
   const ctx = await requireAdminContext(request, { adminOnly: true });
   if (ctx.error) return ctx.error;
 
   const { supabase, actorUser: actor, realProfile } = ctx;
-  const targetId = params.id;
+  const targetId = id;
   const body = await request.json().catch(() => ({}));
   const profileUpdates = {};
   const authUpdates = {};
@@ -43,8 +44,8 @@ export async function PATCH(request, { params }) {
     profileUpdates.must_change_password = body.must_change_password;
   }
   if (typeof body.password === "string" && body.password.length > 0) {
-    if (body.password.length < 6) {
-      return NextResponse.json({ error: "A nova senha precisa ter no mínimo 6 caracteres." }, { status: 400 });
+    if (body.password.length < 8) {
+      return NextResponse.json({ error: "A nova senha precisa ter no mínimo 8 caracteres." }, { status: 400 });
     }
     authUpdates.password = body.password;
     profileUpdates.must_change_password = true;
@@ -86,11 +87,12 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  const { id } = await params;
   const ctx = await requireAdminContext(request, { adminOnly: true });
   if (ctx.error) return ctx.error;
 
   const { supabase, actorUser, realProfile } = ctx;
-  const targetId = params.id;
+  const targetId = id;
 
   if (targetId === actorUser.id) {
     return NextResponse.json({ error: "Voce nao pode excluir sua propria conta." }, { status: 400 });

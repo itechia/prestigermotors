@@ -38,9 +38,7 @@ export default function CookieBanner() {
             <Cookie className="w-4 h-4" aria-hidden="true" />
           </div>
           <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-            Este site usa cookies necessários para funcionar. Com a sua autorização,
-            usamos também cookies de análise, que mostram de forma anônima quais veículos
-            são mais visitados e o que os visitantes procuram. Isso nos ajuda a melhorar
+            Este site usa cookies necessários para funcionar. Isso nos ajuda a melhorar
             o catálogo e o atendimento. Veja a{" "}
             <Link href="/privacidade" className="text-foreground underline underline-offset-2">
               Política de Privacidade

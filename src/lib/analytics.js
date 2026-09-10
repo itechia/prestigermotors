@@ -8,10 +8,19 @@ import { CONSENT_EVENT, readConsent } from "@/lib/cookieConsent";
 
 const SESSION_KEY = "pm:sid";
 const VISITOR_KEY = "pm:vid";
+const ORIGIN_KEY = "pm:origem";
 const FLUSH_DELAY = 1200;
 const MAX_BATCH = 20;
 
+// Endereço e referrer de ENTRADA, lidos assim que o app carrega. Depois de uma
+// navegação interna o ?ref= some da barra de endereços, então guardar aqui é o
+// que permite creditar a visita inteira à origem certa — mesmo quando o
+// visitante só aceita os cookies alguns cliques depois.
+const ENTRY_SEARCH = typeof window !== "undefined" ? window.location.search : "";
+const ENTRY_REFERRER = typeof document !== "undefined" ? document.referrer : "";
+
 let queue = [];
+let origemDetectada = null;
 let flushTimer = null;
 let listenersReady = false;
 
@@ -61,13 +70,81 @@ function getDevice() {
 
 function getReferrerHost() {
   try {
-    const ref = document.referrer;
+    const ref = ENTRY_REFERRER;
     if (!ref) return "";
     const host = new URL(ref).hostname;
     return host === window.location.hostname ? "" : host;
   } catch {
     return "";
   }
+}
+
+// Domínios intermediários que os apps usam ao abrir um link.
+const HOSTS_CONHECIDOS = [
+  [/(^|\.)(wa\.me|whatsapp\.com)$/i, "whatsapp"],
+  [/(^|\.)instagram\.com$/i, "instagram"],
+  [/(^|\.)(facebook\.com|fb\.com|fb\.me)$/i, "facebook"],
+  [/(^|\.)google\./i, "google"],
+  [/(^|\.)(bing\.com|duckduckgo\.com)$/i, "buscador"],
+  [/(^|\.)(t\.co|twitter\.com|x\.com)$/i, "x"],
+  [/(^|\.)(youtube\.com|youtu\.be)$/i, "youtube"],
+  [/(^|\.)(tiktok\.com)$/i, "tiktok"],
+  [/(^|\.)(linkedin\.com|lnkd\.in)$/i, "linkedin"],
+];
+
+// De onde veio a visita.
+//
+// O navegador embutido do WhatsApp (e o do Instagram) NÃO envia referrer, então
+// tudo caía como "direto". A ordem é:
+//   1) ?ref= / utm_source do link que a própria loja compartilhou;
+//   2) user agent do navegador embutido do app;
+//   3) referrer normal, normalizado para um nome amigável.
+// O resultado fica guardado na sessão: o parâmetro só existe na primeira
+// página, mas a origem vale para a visita inteira.
+function detectOrigin() {
+  try {
+    const params = new URLSearchParams(ENTRY_SEARCH);
+    const marcado = params.get("ref") || params.get("utm_source");
+    if (marcado) return marcado.trim().toLowerCase().slice(0, 40);
+  } catch {
+    // segue para as outras pistas
+  }
+
+  const ua = navigator.userAgent || "";
+  if (/WhatsApp/i.test(ua)) return "whatsapp";
+  if (/Instagram/i.test(ua)) return "instagram";
+  if (/FBAN|FBAV|FB_IAB/i.test(ua)) return "facebook";
+
+  const host = getReferrerHost();
+  if (!host) return "";
+  const conhecido = HOSTS_CONHECIDOS.find(([padrao]) => padrao.test(host));
+  return conhecido ? conhecido[1] : host;
+}
+
+function getOrigin() {
+  if (typeof window === "undefined") return "";
+
+  // Já creditada nesta sessão (inclusive de uma carga de página anterior).
+  try {
+    const guardado = window.sessionStorage.getItem(ORIGIN_KEY);
+    if (guardado) return guardado;
+  } catch {
+    // sem storage: vale só o que está em memória
+  }
+
+  if (origemDetectada === null) origemDetectada = detectOrigin();
+
+  // Só grava quando há algo a creditar; "" continua sendo recalculado caso o
+  // visitante volte por um link marcado na mesma aba.
+  if (origemDetectada) {
+    try {
+      window.sessionStorage.setItem(ORIGIN_KEY, origemDetectada);
+    } catch {
+      // ignora
+    }
+  }
+
+  return origemDetectada;
 }
 
 export function analyticsEnabled() {
@@ -137,12 +214,35 @@ export function track(eventType, payload = {}) {
       ...(label || vehicle
         ? { label: label || [vehicle?.brand, vehicle?.model, vehicle?.version].filter(Boolean).join(" ") }
         : {}),
-      referrer_host: getReferrerHost(),
+      referrer_host: getOrigin(),
     },
   });
 
   if (flushTimer) clearTimeout(flushTimer);
   flushTimer = setTimeout(() => flush(), FLUSH_DELAY);
+}
+
+// Executa o registro agora, se o visitante já aceitou os cookies, ou no
+// instante em que ele aceitar.
+//
+// Sem isso, tudo que acontece antes do aceite se perdia: a página de entrada e
+// o primeiro veículo aberto nunca eram contados, porque o efeito que registra
+// roda uma única vez na montagem — bem antes de o visitante clicar em
+// "Aceitar todos". Devolve a função de limpeza do listener.
+export function trackWhenAllowed(registrar) {
+  let registrado = false;
+
+  const tentar = () => {
+    if (registrado || !analyticsEnabled()) return;
+    registrado = true;
+    registrar();
+  };
+
+  tentar();
+  if (registrado || typeof window === "undefined") return () => {};
+
+  window.addEventListener(CONSENT_EVENT, tentar);
+  return () => window.removeEventListener(CONSENT_EVENT, tentar);
 }
 
 // Mede o tempo realmente visível numa página de veículo (ignora aba em segundo

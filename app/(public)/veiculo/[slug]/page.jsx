@@ -22,8 +22,9 @@ async function resolveVehicle(param) {
 }
 
 export async function generateMetadata({ params }) {
+  const { slug } = await params;
   const [vehicle, storeName] = await Promise.all([
-    resolveVehicle(params.slug),
+    resolveVehicle(slug),
     getCachedStoreName(),
   ]);
 
@@ -81,8 +82,9 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params, searchParams }) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
   const [vehicle, settings] = await Promise.all([
-    resolveVehicle(params.slug),
+    resolveVehicle(slug),
     getCachedPublicSettings().catch(() => null),
   ]);
 
@@ -90,10 +92,10 @@ export default async function Page({ params, searchParams }) {
 
   // Rede de segurança: o 308 normalmente vem do middleware; se ele não rodar,
   // o link antigo (UUID) ainda assim vai parar na URL com slug.
-  if (vehicle.slug && isUuid(decodeURIComponent(params.slug || ""))) {
+  if (vehicle.slug && isUuid(decodeURIComponent(slug || ""))) {
     const path = vehiclePath(vehicle);
-    const query = new URLSearchParams(searchParams || {}).toString();
-    permanentRedirect(query ? `${path}?${query}` : path);
+    const queryString = new URLSearchParams(query || {}).toString();
+    permanentRedirect(queryString ? `${path}?${queryString}` : path);
   }
 
   return (

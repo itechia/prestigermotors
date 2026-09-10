@@ -1,8 +1,16 @@
+/* Sem @import de fonte aqui.
+   Este arquivo tinha um @import do Google Fonts (Inter + Plus Jakarta Sans)
+   depois das diretivas do Tailwind. O CSS ignora @import que venha depois de
+   outras regras, então essas fontes NUNCA chegaram a ser baixadas: o site
+   sempre renderizou com a fonte do sistema definida no fallback do
+   tailwind.config.js. Mantido assim de propósito para não mudar a aparência.
+   Se um dia quiser mesmo usar Inter/Plus Jakarta, o lugar certo é o <link>
+   injetado por BrandHead (src/lib/fonts.js). */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @layer base {
   :root {

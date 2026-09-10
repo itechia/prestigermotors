@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import CookieBanner from '@/components/CookieBanner';
 import Analytics from '@/components/Analytics';
 import PageViewTracker from '@/components/PageViewTracker';
+import { SETTINGS_SINGLETON_QUERY_KEY } from '@/lib/defaults';
 
 const makeQueryClient = () =>
   new QueryClient({
@@ -24,8 +25,18 @@ const makeQueryClient = () =>
     },
   });
 
-export function Providers({ children }) {
-  const [queryClient] = useState(makeQueryClient);
+export function Providers({ children, initialSettings = null }) {
+  // As configurações da loja (nome, logo, cores) chegam prontas do servidor.
+  // Sem isso, o servidor renderizava o cabeçalho padrão e o cliente trocava
+  // pelo logo real assim que a requisição voltava — o que dava erro de
+  // hidratação quando a resposta chegava antes de o React terminar de hidratar.
+  const [queryClient] = useState(() => {
+    const client = makeQueryClient();
+    if (initialSettings) {
+      client.setQueryData(SETTINGS_SINGLETON_QUERY_KEY, initialSettings);
+    }
+    return client;
+  });
   const pathname = usePathname();
 
   // Registra o Service Worker apenas em produção

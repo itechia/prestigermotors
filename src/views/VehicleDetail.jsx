@@ -22,7 +22,7 @@ import { IconFromName } from "@/components/IconPicker";
 import SimilarVehicles from "../components/vehicles/SimilarVehicles";
 import InterestFormDialog from "../components/vehicles/InterestFormDialog";
 import { buildVehicleShareText, buildWhatsAppHref } from "@/lib/whatsappMessage";
-import { track, startVisibleTimer } from "@/lib/analytics";
+import { track, trackWhenAllowed, startVisibleTimer } from "@/lib/analytics";
 import { fetchVehicleDetail, fetchVehicleEmbed, VEHICLES_QUERY_KEY } from "@/lib/vehicleQueries";
 import { getLeadPrefillFromSearchParams, toInterestDefaults } from "@/lib/prefillParams";
 import OptimizedImage from "@/components/vehicles/OptimizedImage";
@@ -103,12 +103,18 @@ export default function VehicleDetail({ initialVehicle = null }) {
 
   useEffect(() => {
     if (!vehicleId) return undefined;
+
+    let pararEspera = () => {};
     if (countedVehicleRef.current !== vehicleId) {
       countedVehicleRef.current = vehicleId;
-      track("vehicle_view", { vehicle: vehicleRef.current });
+      pararEspera = trackWhenAllowed(() =>
+        track("vehicle_view", { vehicle: vehicleRef.current })
+      );
     }
+
     const stopTimer = startVisibleTimer();
     return () => {
+      pararEspera();
       const durationMs = stopTimer();
       if (durationMs > 1000) {
         track("vehicle_time", { vehicle: vehicleRef.current, durationMs });
@@ -156,15 +162,20 @@ export default function VehicleDetail({ initialVehicle = null }) {
 
   const handleShare = async () => {
     track("share_click", { vehicle });
-    const url = window.location.href;
     const title = `${vehicle.brand} ${vehicle.model}`.trim();
-    const text = buildVehicleShareText(vehicle, settings);
-    const clipboardText = buildVehicleShareText(vehicle, settings, { includeUrl: true });
+    // A mensagem já traz o link limpo na última linha. Não passamos "url" para
+    // o share nativo: além de o WhatsApp grudar a URL no fim do texto, ele
+    // usaria window.location.href, que pode carregar o ?nome=&tel= de um
+    // atendimento em andamento.
+    const message = buildVehicleShareText(vehicle, settings, {
+      includeUrl: true,
+      labels,
+    });
     try {
       if (navigator.share) {
-        await navigator.share({ title, text, url });
+        await navigator.share({ title, text: message });
       } else {
-        await navigator.clipboard.writeText(clipboardText);
+        await navigator.clipboard.writeText(message);
         toast.success("Mensagem de compartilhamento copiada!");
       }
     } catch {}
@@ -172,7 +183,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
 
   // Rich WhatsApp message: title + specs + price + direct link to the vehicle.
   // The link generates a preview card with cover image (Mercado Livre style).
-  const whatsappHref = buildWhatsAppHref(settings.whatsapp_number, vehicle);
+  const whatsappHref = buildWhatsAppHref(settings.whatsapp_number, vehicle, { labels });
 
   // When the interest webhook is active, the "Tenho interesse" CTA opens the
   // customizable form modal instead of jumping straight to WhatsApp.
