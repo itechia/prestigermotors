@@ -138,8 +138,10 @@ export default function AdminNotifications() {
   // promoção que leva o cliente para uma lista vazia.
   const alcanceDoGrupo = useMemo(() => {
     if (!linkTipo && !linkMarca && !linkModelo) return null;
+    // O banco guarda o tipo como slug ("moto"), e o seletor mostra o rótulo
+    // ("Moto"). Comparar os dois lados pelo slug é o que faz a conta bater.
     return visiveis.filter((vehicle) => {
-      if (linkTipo && (vehicle.vehicle_type || "") !== linkTipo) return false;
+      if (linkTipo && slugify(vehicle.vehicle_type) !== slugify(linkTipo)) return false;
       if (linkMarca && (vehicle.brand || "").toLowerCase() !== linkMarca.toLowerCase()) {
         return false;
       }

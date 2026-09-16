@@ -21,10 +21,6 @@ const LISTAS = {
   cor: "color",
 };
 
-// Estes filtros comparam com o slug do valor do veículo, não com o texto puro
-// (ver a filtragem em src/views/Catalog.jsx).
-const COMPARA_POR_SLUG = new Set(["model", "color"]);
-
 const NUMEROS = {
   precoMin: "priceMin",
   precoMax: "priceMax",
@@ -48,11 +44,15 @@ export function readCatalogParams(search) {
   const params = new URLSearchParams(search || "");
   const filters = {};
 
+  // O banco guarda estes campos já em formato de slug ("moto", "cavalo_mecanico",
+  // "automatico_6m"), e é assim que o catálogo compara. Converter aqui deixa o
+  // link aceitar o texto como a pessoa escreveria: "Moto", "moto" e "MOTO"
+  // chegam todos no mesmo lugar.
   for (const [param, campo] of Object.entries(LISTAS)) {
     if (!params.has(param)) continue;
     const valores = listaDeValores(params.get(param));
     if (valores.length === 0) continue;
-    filters[campo] = COMPARA_POR_SLUG.has(campo) ? valores.map(slugify) : valores;
+    filters[campo] = valores.map(slugify).filter(Boolean);
   }
 
   for (const [param, campo] of Object.entries(NUMEROS)) {
