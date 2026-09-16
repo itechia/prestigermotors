@@ -257,7 +257,7 @@ export default function VehicleDetail({ initialVehicle = null }) {
               <>
                 <OptimizedImage
                   src={images[imageIndex]}
-                  alt={`${vehicleFullName} — foto ${imageIndex + 1} de ${images.length}`}
+                  alt={`${vehicleFullName}, foto ${imageIndex + 1} de ${images.length}`}
                   className="vehicle-detail-gallery-media absolute inset-0 w-full h-full cursor-zoom-in"
                   fill
                   sizes="(max-width: 1024px) 100vw, 60vw"

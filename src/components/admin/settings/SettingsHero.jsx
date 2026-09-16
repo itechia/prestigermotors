@@ -22,7 +22,7 @@ function BannerPreview({ slides }) {
       {/* Mode toggle */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Prévia — como aparece no site
+          Prévia: como aparece no site
         </span>
         <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
           <button
@@ -110,12 +110,12 @@ function BannerPreview({ slides }) {
 
       {mode === "desktop" && (
         <p className="text-[11px] text-muted-foreground">
-          Proporção 5:1 — recomendado 1600 × 320 px
+          Proporção 5:1. Recomendado 1600 × 320 px
         </p>
       )}
       {mode === "mobile" && (
         <p className="text-[11px] text-muted-foreground">
-          Proporção 3:1 — recomendado 900 × 300 px. Se vazio, usa a imagem desktop.
+          Proporção 3:1. Recomendado 900 × 300 px. Se vazio, usa a imagem desktop.
         </p>
       )}
     </div>

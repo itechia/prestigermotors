@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 155);
-  const description = excerpt || `${page.title} — ${storeName}.`;
+  const description = excerpt || `${page.title} | ${storeName}.`;
   const url = `${getBaseUrl()}/pagina/${page.slug}`;
 
   return {

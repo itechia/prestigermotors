@@ -158,7 +158,12 @@ export default function InterestFormDialog({ open, onOpenChange, vehicle, defaul
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      {/* dvh em vez de vh: no Safari do iPhone o "vh" ignora as barras do
+          navegador, então 90vh passava da área visível e o topo do formulário
+          (título e campo de nome) ficava fora da tela, sem como rolar até ele.
+          overscroll-contain impede que a rolagem do formulário arraste a
+          página atrás quando chega no fim. */}
+      <DialogContent className="sm:max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain">
         {done ? (
           <div className="py-6 text-center">
             {/* Store logo + green check overlay */}

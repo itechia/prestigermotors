@@ -176,7 +176,7 @@ export default function SitePagesManager() {
           <DialogHeader>
             <DialogTitle>{form?.id ? "Editar item" : "Novo item"}</DialogTitle>
             <DialogDescription>
-              Escreva uma página em Markdown ou aponte direto para um link — os dois aparecem juntos no rodapé.
+              Escreva uma página em Markdown ou aponte direto para um link. Os dois aparecem juntos no rodapé.
             </DialogDescription>
           </DialogHeader>
           {form && (

@@ -232,7 +232,7 @@ export default function SettingsFooter({ form, update }) {
       </SettingsSection>
 
       <SettingsSection
-        title="Coluna 1 — Institucional"
+        title="Coluna 1: Institucional"
         desc="Links sobre a empresa: quem somos, história, missão, política de privacidade, termos de uso. Use o tipo 'Extensão do domínio' para páginas do seu site (ex: /sobre) ou 'Link direto' para endereços externos."
       >
         <ColumnTitleFields
@@ -250,7 +250,7 @@ export default function SettingsFooter({ form, update }) {
       </SettingsSection>
 
       <SettingsSection
-        title="Coluna 2 — Atendimento"
+        title="Coluna 2: Atendimento"
         desc="Links de suporte e ajuda ao cliente: atendimento, FAQ, política de devolução, privacidade. Facilita que o cliente encontre respostas rápidas."
       >
         <ColumnTitleFields
@@ -268,7 +268,7 @@ export default function SettingsFooter({ form, update }) {
       </SettingsSection>
 
       <SettingsSection
-        title="Coluna 3 — Negócios"
+        title="Coluna 3: Negócios"
         desc="Links comerciais: formas de pagamento, financiamento, consórcio, troca de veículos. Informe o cliente sobre as opções de compra disponíveis."
       >
         <ColumnTitleFields
@@ -287,7 +287,7 @@ export default function SettingsFooter({ form, update }) {
 
       <SettingsSection
         title="Redes sociais"
-        desc="Envie a logo de cada rede social — o ícone só aparece no rodapé se a logo estiver carregada E o link preenchido. Recomendado: PNG quadrado com fundo transparente, 64×64 px ou maior."
+        desc="Envie a logo de cada rede social. O ícone só aparece no rodapé se a logo estiver carregada E o link preenchido. Recomendado: PNG quadrado com fundo transparente, 64×64 px ou maior."
       >
         <div className="space-y-3">
           <SocialRow

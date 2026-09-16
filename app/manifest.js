@@ -21,7 +21,10 @@ export default async function manifest() {
 
   return {
     name,
-    short_name: name.split(" ")[0] || name,
+    // O iOS usa o short_name como legenda do icone na tela de inicio. Cortar
+    // no primeiro espaco virava "Prestiger" e perdia o "Motors" — o sistema ja
+    // abrevia sozinho quando nao cabe.
+    short_name: name,
     description,
     start_url: "/",
     scope: "/",

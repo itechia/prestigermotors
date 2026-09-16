@@ -224,7 +224,7 @@ function Editor() {
       {/* Preços e ano */}
       <Section title="Preços, ano e quilometragem">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Preço de (anterior — riscado)">
+          <Field label="Preço de (anterior, riscado)">
             <BrlInput value={form.price_old} onChange={(v) => update("price_old", v)} />
           </Field>
           <Field label="Preço por *">

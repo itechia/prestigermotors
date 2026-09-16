@@ -244,7 +244,7 @@ function LeadDetailDialog({ lead, onClose, onUpdate, onRemove }) {
 
   return (
     <Dialog open={!!lead} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-3xl max-h-[85dvh] overflow-y-auto overscroll-contain p-0">
         <div className="p-6 border-b border-border/50">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">

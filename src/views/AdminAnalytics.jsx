@@ -67,6 +67,7 @@ const ORIGIN_LABELS = {
   tiktok: "TikTok",
   linkedin: "LinkedIn",
   x: "X (Twitter)",
+  notificacao: "Notificação",
   direto: "Acesso direto",
 };
 
@@ -128,7 +129,6 @@ export default function AdminAnalytics() {
 
   const analytics = data?.analytics || null;
   const summary = analytics?.summary || {};
-  const byDay = analytics?.by_day || [];
   const topVehicles = analytics?.top_vehicles || [];
   const topPages = analytics?.top_pages || [];
   const topSearches = analytics?.top_searches || [];
@@ -136,9 +136,44 @@ export default function AdminAnalytics() {
   const devices = analytics?.devices || [];
   const referrers = analytics?.referrers || [];
 
+  // O banco só devolve os dias que tiveram movimento. Sem preencher os buracos,
+  // três dias soltos viram três barras largas e o gráfico deixa de mostrar a
+  // passagem do tempo. As chaves vêm em UTC (date_trunc no Postgres), então a
+  // série é montada em UTC para bater exatamente com elas.
+  const dailySeries = useMemo(() => {
+    const byDay = analytics?.by_day || [];
+    if (byDay.length === 0) return [];
+
+    const porDia = new Map(byDay.map((d) => [d.dia, d]));
+    const toUtcMidnight = (value) => {
+      const date = new Date(value);
+      return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    };
+
+    // O backend sempre devolve o intervalo aplicado; o último/primeiro dia com
+    // movimento só entra como rede de segurança (e mantém o cálculo puro).
+    const cursor = toUtcMidnight(data?.to || byDay[byDay.length - 1].dia);
+    const inicio = toUtcMidnight(data?.from || byDay[0].dia);
+
+    const dias = [];
+    // Janela de 30 dias: acima disso as barras ficam finas demais para ler.
+    for (let i = 0; i < 30 && cursor >= inicio; i += 1) {
+      const key = cursor.toISOString().slice(0, 10);
+      const encontrado = porDia.get(key);
+      dias.unshift({
+        dia: key,
+        sessions: Number(encontrado?.sessions) || 0,
+        interest_clicks: Number(encontrado?.interest_clicks) || 0,
+      });
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+
+    return dias;
+  }, [analytics?.by_day, data?.from, data?.to]);
+
   const maxDay = useMemo(
-    () => Math.max(1, ...byDay.map((d) => Number(d.sessions) || 0)),
-    [byDay]
+    () => Math.max(1, ...dailySeries.map((d) => d.sessions)),
+    [dailySeries]
   );
 
   const appliedLabel = formatRangeLabel(data?.from, data?.to);
@@ -330,25 +365,40 @@ export default function AdminAnalytics() {
           <h2 className="font-display font-bold text-lg mb-1">Movimento por dia</h2>
           <p className="text-xs text-muted-foreground mb-4">Sessões e cliques em interesse.</p>
 
-          {byDay.length === 0 ? (
+          {dailySeries.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sem movimento registrado.</p>
           ) : (
-            <div className="flex items-end gap-1 h-40" role="img" aria-label="Sessões por dia">
-              {byDay.slice(-30).map((day) => {
-                const height = Math.max(4, ((Number(day.sessions) || 0) / maxDay) * 100);
-                return (
-                  <div key={day.dia} className="flex-1 flex flex-col justify-end group relative">
-                    <div
-                      className="w-full rounded-t bg-primary/70 group-hover:bg-primary transition-colors"
-                      style={{ height: `${height}%` }}
-                    />
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:block whitespace-nowrap text-[10px] bg-popover border border-border rounded px-1.5 py-0.5 shadow">
-                      {formatDay(day.dia)}: {day.sessions} sessões · {day.interest_clicks} interesses
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <>
+              {/* items-stretch (e não items-end): com items-end cada coluna
+                  encolhe até o conteúdo, a barra perde a altura de referência
+                  e o percentual não resolve — o gráfico ficava invisível. */}
+              <div className="flex items-stretch gap-1 h-40" role="img" aria-label="Sessões por dia">
+                {dailySeries.map((day) => {
+                  // Dia sem movimento vira um traço: mostra que o dia existe
+                  // no período, sem fingir que houve visita.
+                  const height = day.sessions === 0 ? 2 : Math.max(6, (day.sessions / maxDay) * 100);
+                  return (
+                    <div key={day.dia} className="flex-1 flex flex-col justify-end group relative">
+                      <div
+                        className={`w-full rounded-t transition-colors ${
+                          day.sessions === 0
+                            ? "bg-muted-foreground/25"
+                            : "bg-primary/70 group-hover:bg-primary"
+                        }`}
+                        style={{ height: `${height}%` }}
+                      />
+                      <span className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:block whitespace-nowrap text-[10px] bg-popover border border-border rounded px-1.5 py-0.5 shadow z-10">
+                        {formatDay(day.dia)}: {day.sessions} sessões · {day.interest_clicks} interesses
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
+                <span>{formatDay(dailySeries[0].dia)}</span>
+                <span>{formatDay(dailySeries[dailySeries.length - 1].dia)}</span>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -14,6 +14,7 @@ import Reviews from "../components/vehicles/Reviews";
 import { slugify } from "@/lib/useTaxonomies";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toInterestDefaults, useLeadPrefillFromLocation } from "@/lib/prefillParams";
+import { readCatalogParams } from "@/lib/catalogFilterParams";
 import { track } from "@/lib/analytics";
 
 // Nomes amigáveis dos filtros no relatório do admin.
@@ -94,6 +95,23 @@ export default function Catalog({ initialVehicles = [] }) {
     trackFilterChanges(filters, nextFilters);
     setFilters(nextFilters);
   };
+
+  // Filtros vindos do link (ex.: a notificação de uma promoção da linha XRE 300
+  // abre o catálogo já mostrando só essas motos). Lido depois da montagem, e
+  // não durante a renderização, para não divergir do HTML vindo do servidor.
+  useEffect(() => {
+    const { filters: doLink, brands, search: buscaDoLink, hasAny } = readCatalogParams(
+      window.location.search
+    );
+    if (!hasAny) return;
+
+    shouldScrollToResultsRef.current = true;
+    if (Object.keys(doLink).length > 0) {
+      setFilters((atuais) => ({ ...atuais, ...doLink }));
+    }
+    if (brands.length > 0) setSelectedBrands(brands);
+    if (buscaDoLink) setSearch(buscaDoLink);
+  }, []);
 
   // Analítico: registra o termo buscado depois que o visitante para de digitar.
   useEffect(() => {

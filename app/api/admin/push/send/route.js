@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // Vercel (10s) é curto demais para isso.
 export const maxDuration = 60;
 
-const MAX_TITLE = 80;
+const MAX_TITLE = 60;
 const MAX_BODY = 300;
 // Teto por disparo. Acima disso a Function estoura o tempo e o envio ficaria
 // pela metade sem ninguém saber — melhor recusar e avisar.
@@ -50,27 +50,38 @@ export async function POST(request) {
     return NextResponse.json({ error: `A mensagem passa de ${MAX_BODY} caracteres.` }, { status: 400 });
   }
 
+  const title = String(body.title || "").trim();
+  if (!title) {
+    return NextResponse.json({ error: "Escreva o titulo da notificacao." }, { status: 400 });
+  }
+  if (title.length > MAX_TITLE) {
+    return NextResponse.json({ error: `O titulo passa de ${MAX_TITLE} caracteres.` }, { status: 400 });
+  }
+
   const url = normalizeUrl(body.url);
   if (url === null) {
     return NextResponse.json({ error: "O link deve ser um caminho do site, comecando com /." }, { status: 400 });
   }
 
-  // O título e a logo saem das configurações da loja: o dono muda a logo em
-  // Configurações e a notificação acompanha, sem tocar em código.
+  // A logo sai das configurações da loja: o dono troca a logo em Configurações
+  // e a notificação acompanha, sem tocar em código.
   const { data: settings } = await supabase
     .from("store_settings")
-    .select("store_name,logo_url")
+    .select("logo_url")
     .order("updated_date", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const storeName = (settings?.store_name || "Prestiger Motors").slice(0, MAX_TITLE);
   const iconUrl = settings?.logo_url || "/icon-192.png";
 
+  // O clique entra no site marcado como vindo da notificação. O rastreador já
+  // entende ?ref= e credita a sessão inteira à origem (src/lib/analytics.js).
+  const trackedUrl = `${url}${url.includes("?") ? "&" : "?"}ref=notificacao`;
+
   const payload = {
-    title: storeName,
+    title,
     body: message,
-    url,
+    url: trackedUrl,
     icon: iconUrl,
     badge: "/icon-192.png",
     tag: `pm-${Date.now()}`,
@@ -136,8 +147,10 @@ export async function POST(request) {
   const { data: campaign } = await supabase
     .from("push_campaigns")
     .insert({
-      title: storeName,
+      title,
       body: message,
+      // Guarda o caminho limpo: o ?ref= é detalhe de medição, não faz parte da
+      // campanha e só poluiria o histórico.
       url,
       icon_url: iconUrl,
       target_count: subscriptions.length,
@@ -154,6 +167,7 @@ export async function POST(request) {
     action: "notificacao_enviada",
     details: {
       campaign_id: campaign?.id ?? null,
+      title,
       body: message,
       url,
       target_count: subscriptions.length,

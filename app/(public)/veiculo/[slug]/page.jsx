@@ -69,7 +69,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       locale: "pt_BR",
       images: image
-        ? [{ url: image, width: 1200, height: 900, alt: `${fullName} — foto do veículo` }]
+        ? [{ url: image, width: 1200, height: 900, alt: `${fullName}, foto do veículo` }]
         : undefined,
     },
     twitter: {

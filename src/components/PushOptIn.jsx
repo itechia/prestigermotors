@@ -144,7 +144,7 @@ export default function PushOptIn() {
               <>
                 Quer receber as promoções da{" "}
                 <span className="text-foreground font-semibold">{storeName}</span> em primeira mão?
-                Avisamos quando chegar veículo novo ou desconto — sem cadastro, e você desliga quando quiser.
+                Avisamos quando chegar veículo novo ou desconto.
               </>
             )}
           </p>
