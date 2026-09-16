@@ -18,6 +18,7 @@ import {
   UserCheck,
   UserCircle,
   BarChart3,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStoreSettings } from "@/lib/useStoreSettings";
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/admin/vendas", label: "Vendas", icon: ReceiptText },
   { to: "/admin/propostas", label: "Propostas", icon: Inbox },
   { to: "/admin/analitico", label: "Analítico", icon: BarChart3, adminOnly: true },
+  { to: "/admin/notificacoes", label: "Notificações", icon: Bell, adminOnly: true },
   { to: "/admin/usuarios", label: "Usuários", icon: Users, adminOnly: true },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, adminOnly: true },
 ];
@@ -44,6 +46,7 @@ const MODULE_BY_ROUTE = {
   "/admin/vendas": "vendas",
   "/admin/propostas": "propostas",
   "/admin/analitico": "analitico",
+  "/admin/notificacoes": "notificacoes",
   "/admin/usuarios": "usuarios",
   "/admin/configuracoes": "configuracoes",
 };

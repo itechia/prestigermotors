@@ -25,6 +25,7 @@ export const ADMIN_MODULES = [
   "propostas",
   "usuarios",
   "configuracoes",
+  "notificacoes",
 ];
 
 export function getModuleFromRequest(request, explicitModule = null) {
@@ -38,6 +39,7 @@ export function getModuleFromRequest(request, explicitModule = null) {
   if (pathname.startsWith("/api/admin/sales")) return "vendas";
   if (pathname.startsWith("/api/admin/site-pages")) return "configuracoes";
   if (pathname.startsWith("/api/admin/analytics")) return "analitico";
+  if (pathname.startsWith("/api/admin/push")) return "notificacoes";
   return null;
 }
 

@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import CookieBanner from '@/components/CookieBanner';
 import Analytics from '@/components/Analytics';
 import PageViewTracker from '@/components/PageViewTracker';
+import PushOptIn from '@/components/PushOptIn';
 import { SETTINGS_SINGLETON_QUERY_KEY } from '@/lib/defaults';
 
 const makeQueryClient = () =>
@@ -72,6 +73,7 @@ export function Providers({ children, initialSettings = null }) {
           <SonnerToaster position="top-center" richColors />
           {!isAdminRoute && <CookieBanner />}
           {!isAdminRoute && <PageViewTracker />}
+          {!isAdminRoute && <PushOptIn />}
           <Suspense fallback={null}>
             <Analytics />
           </Suspense>

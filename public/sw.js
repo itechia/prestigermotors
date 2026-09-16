@@ -46,3 +46,62 @@ self.addEventListener("fetch", (event) => {
     )
   );
 });
+
+// ---------------------------------------------------------------------------
+// Notificações push
+// ---------------------------------------------------------------------------
+// O payload vem de /api/admin/push/send já montado: o título é o nome da loja
+// e o ícone é a logo cadastrada em Configurações.
+
+const FALLBACK_ICON = "/icon-192.png";
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    // Push sem payload (ou com payload quebrado) ainda deve virar algo
+    // visível: em vários navegadores, ignorar um push recebido custa a
+    // permissão do site.
+    data = {};
+  }
+
+  const title = data.title || "Prestiger Motors";
+  const options = {
+    body: data.body || "Novidades no catálogo.",
+    icon: data.icon || FALLBACK_ICON,
+    badge: data.badge || FALLBACK_ICON,
+    tag: data.tag || "prestiger-motors",
+    // Sem isso, uma notificação com a mesma tag substitui a anterior em
+    // silêncio e o visitante não percebe que chegou coisa nova.
+    renotify: Boolean(data.tag),
+    data: { url: data.url || "/" },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const target = new URL(event.notification.data?.url || "/", self.location.origin);
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // Se o site já está aberto numa aba, reaproveita em vez de abrir outra.
+        for (const client of clientList) {
+          if (new URL(client.url).origin === target.origin && "focus" in client) {
+            // navigate() falha em alguns navegadores quando a aba não está sob
+            // controle deste Service Worker. Focar já é melhor que não fazer
+            // nada, então a falha não pode derrubar o clique.
+            return Promise.resolve(client.navigate(target.href))
+              .catch(() => client)
+              .then((focused) => (focused || client).focus());
+          }
+        }
+        return self.clients.openWindow(target.href);
+      })
+  );
+});
