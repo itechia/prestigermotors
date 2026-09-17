@@ -78,9 +78,10 @@ export function readCatalogParams(search) {
  * Monta o caminho do catálogo já filtrado, para o admin gerar o link.
  * Recebe os valores como o dono escreve ("Moto", "XRE 300").
  */
-export function buildCatalogPath({ tipo, marca, modelo, busca } = {}) {
+export function buildCatalogPath({ tipo, categoria, marca, modelo, busca } = {}) {
   const params = new URLSearchParams();
   if (tipo) params.set("tipo", tipo);
+  if (categoria) params.set("categoria", categoria);
   if (marca) params.set("marca", marca);
   if (modelo) params.set("modelo", modelo);
   if (busca) params.set("busca", busca);

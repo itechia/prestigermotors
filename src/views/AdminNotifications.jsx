@@ -45,14 +45,28 @@ function formatDateTime(value) {
   });
 }
 
-// O banco guarda o tipo como slug ("moto") e o seletor mostra o rótulo
-// ("Moto"), então tipo e modelo comparam pelo slug; marca compara pelo nome,
-// como o catálogo faz.
-function combinaComGrupo(vehicle, { tipo, marca, modelo }) {
+// O banco guarda tipo e categoria como slug ("moto", "cavalo_mecanico") e o
+// seletor mostra o rótulo, então tipo, categoria e modelo comparam pelo slug;
+// marca compara pelo nome, como o catálogo faz.
+function combinaComGrupo(vehicle, { tipo, categoria, marca, modelo }) {
   if (tipo && slugify(vehicle.vehicle_type) !== slugify(tipo)) return false;
+  if (categoria && slugify(vehicle.body_type) !== slugify(categoria)) return false;
   if (marca && (vehicle.brand || "").toLowerCase() !== marca.toLowerCase()) return false;
   if (modelo && slugify(vehicle.model) !== slugify(modelo)) return false;
   return true;
+}
+
+const CAMPOS_DO_GRUPO = ["tipo", "categoria", "marca", "modelo"];
+const GRUPO_VAZIO = { tipo: "", categoria: "", marca: "", modelo: "" };
+
+// Monta um tradutor slug -> rótulo a partir de uma lista de taxonomia.
+function rotulador(lista) {
+  const mapa = new Map();
+  for (const item of lista || []) {
+    mapa.set(slugify(item.value), item.label);
+    mapa.set(slugify(item.label), item.label);
+  }
+  return (slug) => mapa.get(slugify(slug)) || String(slug || "");
 }
 
 function nomeDoVeiculo(vehicle) {
@@ -105,6 +119,7 @@ export default function AdminNotifications() {
 
   const [destino, setDestino] = useState("loja");
   const [linkTipo, setLinkTipo] = useState("");
+  const [linkCategoria, setLinkCategoria] = useState("");
   const [linkMarca, setLinkMarca] = useState("");
   const [linkModelo, setLinkModelo] = useState("");
   const [linkVeiculo, setLinkVeiculo] = useState("");
@@ -137,23 +152,23 @@ export default function AdminNotifications() {
     [visiveis]
   );
 
-  // Nome bonito do tipo ("Moto") a partir do slug guardado no banco ("moto").
-  const rotuloDoTipo = useMemo(() => {
-    const mapa = new Map();
-    for (const item of taxonomies.vehicle_types || []) {
-      mapa.set(slugify(item.value), item.label);
-      mapa.set(slugify(item.label), item.label);
-    }
-    return (slug) => mapa.get(slugify(slug)) || String(slug || "");
-  }, [taxonomies.vehicle_types]);
+  // Nome bonito ("Moto", "Cavalo Mecânico") a partir do slug guardado no
+  // banco ("moto", "cavalo_mecanico").
+  const rotuloDoTipo = useMemo(() => rotulador(taxonomies.vehicle_types), [taxonomies.vehicle_types]);
+  const rotuloDaCategoria = useMemo(() => rotulador(taxonomies.categories), [taxonomies.categories]);
 
-  const escolhaDoGrupo = { tipo: linkTipo, marca: linkMarca, modelo: linkModelo };
+  const escolhaDoGrupo = {
+    tipo: linkTipo,
+    categoria: linkCategoria,
+    marca: linkMarca,
+    modelo: linkModelo,
+  };
 
   // As opções de cada seletor vêm do estoque, e só do que ainda combina com o
   // que já foi escolhido nos outros dois. É o mesmo comportamento dos filtros
   // do site: escolheu "Moto", a lista de marcas passa a ter só quem tem moto.
   const opcoesDoGrupo = useMemo(() => {
-    const escolha = { tipo: linkTipo, marca: linkMarca, modelo: linkModelo };
+    const escolha = { tipo: linkTipo, categoria: linkCategoria, marca: linkMarca, modelo: linkModelo };
     const restante = (ignorar) =>
       visiveis.filter((vehicle) => combinaComGrupo(vehicle, { ...escolha, [ignorar]: "" }));
 
@@ -164,10 +179,11 @@ export default function AdminNotifications() {
 
     return {
       tipo: distintos(restante("tipo").map((vehicle) => rotuloDoTipo(vehicle.vehicle_type))),
+      categoria: distintos(restante("categoria").map((vehicle) => rotuloDaCategoria(vehicle.body_type))),
       marca: distintos(restante("marca").map((vehicle) => vehicle.brand)),
       modelo: distintos(restante("modelo").map((vehicle) => vehicle.model)),
     };
-  }, [visiveis, rotuloDoTipo, linkTipo, linkMarca, linkModelo]);
+  }, [visiveis, rotuloDoTipo, rotuloDaCategoria, linkTipo, linkCategoria, linkMarca, linkModelo]);
 
   // Ao mudar um seletor, o que ficou incompatível nos outros dois é limpo.
   // Assim nunca fica uma escolha que não existe no estoque.
@@ -175,36 +191,48 @@ export default function AdminNotifications() {
     // A opção "Todos" do seletor chega como "all"; aqui significa "sem filtro".
     const valor = valorBruto === "all" ? "" : valorBruto;
     const proxima = { ...escolhaDoGrupo, [campo]: valor };
-    for (const outro of ["tipo", "marca", "modelo"]) {
+    for (const outro of CAMPOS_DO_GRUPO) {
       if (outro === campo || !proxima[outro]) continue;
-      const par = { tipo: "", marca: "", modelo: "", [campo]: valor, [outro]: proxima[outro] };
+      const par = { ...GRUPO_VAZIO, [campo]: valor, [outro]: proxima[outro] };
       if (!visiveis.some((vehicle) => combinaComGrupo(vehicle, par))) proxima[outro] = "";
     }
     setLinkTipo(proxima.tipo);
+    setLinkCategoria(proxima.categoria);
     setLinkMarca(proxima.marca);
     setLinkModelo(proxima.modelo);
   };
 
   // Quantos veículos o grupo escolhido alcança hoje.
   const alcanceDoGrupo = useMemo(() => {
-    if (!linkTipo && !linkMarca && !linkModelo) return null;
+    if (!linkTipo && !linkCategoria && !linkMarca && !linkModelo) return null;
     return visiveis.filter((vehicle) =>
-      combinaComGrupo(vehicle, { tipo: linkTipo, marca: linkMarca, modelo: linkModelo })
+      combinaComGrupo(vehicle, {
+        tipo: linkTipo,
+        categoria: linkCategoria,
+        marca: linkMarca,
+        modelo: linkModelo,
+      })
     ).length;
-  }, [visiveis, linkTipo, linkMarca, linkModelo]);
+  }, [visiveis, linkTipo, linkCategoria, linkMarca, linkModelo]);
 
   // O endereço é sempre derivado da escolha, nunca digitado.
   const url = useMemo(() => {
     if (destino === "veiculo") return linkVeiculo ? `/veiculo/${linkVeiculo}` : "/";
     if (destino === "grupo") {
-      return buildCatalogPath({ tipo: linkTipo, marca: linkMarca, modelo: linkModelo });
+      return buildCatalogPath({
+        tipo: linkTipo,
+        categoria: linkCategoria,
+        marca: linkMarca,
+        modelo: linkModelo,
+      });
     }
     return "/";
-  }, [destino, linkVeiculo, linkTipo, linkMarca, linkModelo]);
+  }, [destino, linkVeiculo, linkTipo, linkCategoria, linkMarca, linkModelo]);
 
   const limparDestino = () => {
     setDestino("loja");
     setLinkTipo("");
+    setLinkCategoria("");
     setLinkMarca("");
     setLinkModelo("");
     setLinkVeiculo("");
@@ -352,12 +380,18 @@ export default function AdminNotifications() {
 
             {destino === "grupo" && (
               <div className="space-y-2 pt-1">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <SearchableSelect
                     value={linkTipo}
                     onChange={(value) => escolherNoGrupo("tipo", value)}
                     options={opcoesDoGrupo.tipo}
                     placeholder="Tipo"
+                  />
+                  <SearchableSelect
+                    value={linkCategoria}
+                    onChange={(value) => escolherNoGrupo("categoria", value)}
+                    options={opcoesDoGrupo.categoria}
+                    placeholder="Categoria"
                   />
                   <SearchableSelect
                     value={linkMarca}
