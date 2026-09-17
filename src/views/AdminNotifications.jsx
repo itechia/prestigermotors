@@ -45,6 +45,16 @@ function formatDateTime(value) {
   });
 }
 
+// O banco guarda o tipo como slug ("moto") e o seletor mostra o rótulo
+// ("Moto"), então tipo e modelo comparam pelo slug; marca compara pelo nome,
+// como o catálogo faz.
+function combinaComGrupo(vehicle, { tipo, marca, modelo }) {
+  if (tipo && slugify(vehicle.vehicle_type) !== slugify(tipo)) return false;
+  if (marca && (vehicle.brand || "").toLowerCase() !== marca.toLowerCase()) return false;
+  if (modelo && slugify(vehicle.model) !== slugify(modelo)) return false;
+  return true;
+}
+
 function nomeDoVeiculo(vehicle) {
   const nome = [vehicle.brand, vehicle.model, vehicle.version].filter(Boolean).join(" ");
   const ano = vehicle.manufacture_year || vehicle.year;
@@ -122,32 +132,65 @@ export default function AdminNotifications() {
     [vehicles]
   );
 
-  const modelOptions = useMemo(() => {
-    const marcaSlug = slugify(linkMarca);
-    return (taxonomies.models || [])
-      .filter((model) => !marcaSlug || !model.parent || model.parent === marcaSlug)
-      .map((model) => ({ label: model.label, value: model.label }));
-  }, [taxonomies.models, linkMarca]);
-
   const vehicleOptions = useMemo(
     () => visiveis.map((vehicle) => ({ label: nomeDoVeiculo(vehicle), value: vehicle.slug })),
     [visiveis]
   );
 
-  // Quantos veículos o grupo escolhido alcança hoje. Evita disparar uma
-  // promoção que leva o cliente para uma lista vazia.
+  // Nome bonito do tipo ("Moto") a partir do slug guardado no banco ("moto").
+  const rotuloDoTipo = useMemo(() => {
+    const mapa = new Map();
+    for (const item of taxonomies.vehicle_types || []) {
+      mapa.set(slugify(item.value), item.label);
+      mapa.set(slugify(item.label), item.label);
+    }
+    return (slug) => mapa.get(slugify(slug)) || String(slug || "");
+  }, [taxonomies.vehicle_types]);
+
+  const escolhaDoGrupo = { tipo: linkTipo, marca: linkMarca, modelo: linkModelo };
+
+  // As opções de cada seletor vêm do estoque, e só do que ainda combina com o
+  // que já foi escolhido nos outros dois. É o mesmo comportamento dos filtros
+  // do site: escolheu "Moto", a lista de marcas passa a ter só quem tem moto.
+  const opcoesDoGrupo = useMemo(() => {
+    const escolha = { tipo: linkTipo, marca: linkMarca, modelo: linkModelo };
+    const restante = (ignorar) =>
+      visiveis.filter((vehicle) => combinaComGrupo(vehicle, { ...escolha, [ignorar]: "" }));
+
+    const distintos = (valores) =>
+      [...new Set(valores.filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }))
+        .map((valor) => ({ label: valor, value: valor }));
+
+    return {
+      tipo: distintos(restante("tipo").map((vehicle) => rotuloDoTipo(vehicle.vehicle_type))),
+      marca: distintos(restante("marca").map((vehicle) => vehicle.brand)),
+      modelo: distintos(restante("modelo").map((vehicle) => vehicle.model)),
+    };
+  }, [visiveis, rotuloDoTipo, linkTipo, linkMarca, linkModelo]);
+
+  // Ao mudar um seletor, o que ficou incompatível nos outros dois é limpo.
+  // Assim nunca fica uma escolha que não existe no estoque.
+  const escolherNoGrupo = (campo, valorBruto) => {
+    // A opção "Todos" do seletor chega como "all"; aqui significa "sem filtro".
+    const valor = valorBruto === "all" ? "" : valorBruto;
+    const proxima = { ...escolhaDoGrupo, [campo]: valor };
+    for (const outro of ["tipo", "marca", "modelo"]) {
+      if (outro === campo || !proxima[outro]) continue;
+      const par = { tipo: "", marca: "", modelo: "", [campo]: valor, [outro]: proxima[outro] };
+      if (!visiveis.some((vehicle) => combinaComGrupo(vehicle, par))) proxima[outro] = "";
+    }
+    setLinkTipo(proxima.tipo);
+    setLinkMarca(proxima.marca);
+    setLinkModelo(proxima.modelo);
+  };
+
+  // Quantos veículos o grupo escolhido alcança hoje.
   const alcanceDoGrupo = useMemo(() => {
     if (!linkTipo && !linkMarca && !linkModelo) return null;
-    // O banco guarda o tipo como slug ("moto"), e o seletor mostra o rótulo
-    // ("Moto"). Comparar os dois lados pelo slug é o que faz a conta bater.
-    return visiveis.filter((vehicle) => {
-      if (linkTipo && slugify(vehicle.vehicle_type) !== slugify(linkTipo)) return false;
-      if (linkMarca && (vehicle.brand || "").toLowerCase() !== linkMarca.toLowerCase()) {
-        return false;
-      }
-      if (linkModelo && slugify(vehicle.model) !== slugify(linkModelo)) return false;
-      return true;
-    }).length;
+    return visiveis.filter((vehicle) =>
+      combinaComGrupo(vehicle, { tipo: linkTipo, marca: linkMarca, modelo: linkModelo })
+    ).length;
   }, [visiveis, linkTipo, linkMarca, linkModelo]);
 
   // O endereço é sempre derivado da escolha, nunca digitado.
@@ -312,31 +355,20 @@ export default function AdminNotifications() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <SearchableSelect
                     value={linkTipo}
-                    onChange={setLinkTipo}
-                    options={(taxonomies.vehicle_types || []).map((item) => ({
-                      label: item.label,
-                      value: item.label,
-                    }))}
+                    onChange={(value) => escolherNoGrupo("tipo", value)}
+                    options={opcoesDoGrupo.tipo}
                     placeholder="Tipo"
                   />
                   <SearchableSelect
                     value={linkMarca}
-                    // Trocar de marca zera o modelo: um XRE 300 não faz sentido
-                    // pendurado na Fiat.
-                    onChange={(value) => {
-                      setLinkMarca(value);
-                      setLinkModelo("");
-                    }}
-                    options={(taxonomies.brands || []).map((item) => ({
-                      label: item.label,
-                      value: item.label,
-                    }))}
+                    onChange={(value) => escolherNoGrupo("marca", value)}
+                    options={opcoesDoGrupo.marca}
                     placeholder="Marca"
                   />
                   <SearchableSelect
                     value={linkModelo}
-                    onChange={setLinkModelo}
-                    options={modelOptions}
+                    onChange={(value) => escolherNoGrupo("modelo", value)}
+                    options={opcoesDoGrupo.modelo}
                     placeholder="Modelo"
                   />
                 </div>
@@ -362,7 +394,7 @@ export default function AdminNotifications() {
               <div className="pt-1">
                 <SearchableSelect
                   value={linkVeiculo}
-                  onChange={setLinkVeiculo}
+                  onChange={(value) => setLinkVeiculo(value === "all" ? "" : value)}
                   options={vehicleOptions}
                   placeholder="Escolha o veículo"
                 />
