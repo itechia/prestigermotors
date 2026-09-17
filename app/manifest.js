@@ -29,6 +29,10 @@ export default async function manifest() {
     start_url: "/",
     scope: "/",
     display: "standalone",
+    // Quando um link do site cai no app instalado (Android e desktop), navega
+    // na janela que já está aberta em vez de abrir outra a cada toque. No
+    // iPhone isso não se aplica: o iOS não entrega links a sites instalados.
+    launch_handler: { client_mode: "navigate-existing" },
     background_color: "#ffffff",
     theme_color: "#14181F",
     lang: "pt-BR",
